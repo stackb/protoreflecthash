@@ -23,7 +23,7 @@ change without warning until v1.
 # Usage
 
 ```
-go get github.com/stackb/protoreflecthash
+go get github.com/stackb/protoreflecthash@latest
 ```
 
 ```go
@@ -35,10 +35,12 @@ import (
 
 func main() {
     msg := mustGetProtoMessageSomewhere()
+
     hex, err := protoreflecthash.String(msg)
     if err != nil {
-        log.Fatal(err)
+        panic(err.Error())
     }
+    
     println(hex)
 }
 ```
