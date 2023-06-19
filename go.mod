@@ -1,6 +1,6 @@
 module github.com/stackb/protoreflecthash
 
-go 1.15
+go 1.16
 
 require (
 	github.com/benlaurie/objecthash v0.0.0-20180202135721-d1e3d6079fc1
