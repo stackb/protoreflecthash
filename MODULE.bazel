@@ -1,0 +1,8 @@
+module(
+    name = "protoreflecthash",
+    version = "0.1.0",
+    repo_name = "com_github_stackb_protoreflecthash",
+)
+
+bazel_dep(name = "protobuf", version = "21.7", repo_name = "com_google_protobuf")
+bazel_dep(name = "rules_proto", version = "4.0.0")
