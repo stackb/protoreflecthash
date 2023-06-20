@@ -265,29 +265,27 @@ func TestHashList(t *testing.T) {
 }
 
 func TestHashMap(t *testing.T) {
-	intMap := proto3.IntMaps{}
+	zeroMap := &proto3.IntMaps{IntToString: map[int64]string{0: "ZERO"}}
+	// zeroMsg := zezeroMap.
 
 	for name, tc := range map[string]struct {
 		kind  protoreflect.Kind
-		value protoreflect.List
+		keyFd protoreflect.FieldDescriptor
+		valFd protoreflect.FieldDescriptor
+		value protoreflect.Map
 		want  string
 	}{
 		"zero": {
 			kind:  protoreflect.StringKind,
-			value: stringList{},
+			value: nil,
 			want:  "acac86c0e609ca906f632b0e2dacccb2b77d22b0621f20ebece1a4835b93f6f0",
-		},
-		"foobar": {
-			kind:  protoreflect.StringKind,
-			value: stringList{"foo", "bar"},
-			want:  "32ae896c413cfdc79eec68be9139c86ded8b279238467c216cf2bec4d5f1e4a2",
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
 			h := hasher{}
 
 			got := getHash(t, func() ([]byte, error) {
-				return h.hashList(tc.kind, tc.value)
+				return h.hashMap(tc.keyFd, tc.valFd, tc.value)
 			})
 
 			if diff := cmp.Diff(tc.want, got); diff != "" {
