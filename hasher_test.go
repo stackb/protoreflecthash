@@ -16,6 +16,8 @@ import (
 	"google.golang.org/protobuf/reflect/protoregistry"
 	"google.golang.org/protobuf/types/descriptorpb"
 	"google.golang.org/protobuf/types/dynamicpb"
+
+	"github.com/pcj/objecthash-proto/test_protos/generated/latest/proto3"
 )
 
 //go:embed testdata/test_protos.protoset.pb
@@ -228,6 +230,43 @@ func TestHashBytes(t *testing.T) {
 }
 
 func TestHashList(t *testing.T) {
+	for name, tc := range map[string]struct {
+		kind  protoreflect.Kind
+		value protoreflect.List
+		want  string
+	}{
+		"zero": {
+			kind:  protoreflect.StringKind,
+			value: stringList{},
+			want:  "acac86c0e609ca906f632b0e2dacccb2b77d22b0621f20ebece1a4835b93f6f0",
+		},
+		"foobar": {
+			kind:  protoreflect.StringKind,
+			value: stringList{"foo", "bar"},
+			want:  "32ae896c413cfdc79eec68be9139c86ded8b279238467c216cf2bec4d5f1e4a2",
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			h := hasher{}
+
+			got := getHash(t, func() ([]byte, error) {
+				return h.hashList(tc.kind, tc.value)
+			})
+
+			if diff := cmp.Diff(tc.want, got); diff != "" {
+				t.Errorf("protohash (-want +got):\n%s", diff)
+			}
+
+			if diff := cmp.Diff(tc.want, objectHash(t, tc.value)); diff != "" {
+				t.Errorf("objecthash (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestHashMap(t *testing.T) {
+	intMap := proto3.IntMaps{}
+
 	for name, tc := range map[string]struct {
 		kind  protoreflect.Kind
 		value protoreflect.List
