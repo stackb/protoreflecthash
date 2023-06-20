@@ -17,7 +17,7 @@ import (
 	"google.golang.org/protobuf/types/descriptorpb"
 	"google.golang.org/protobuf/types/dynamicpb"
 
-	"github.com/pcj/objecthash-proto/test_protos/generated/latest/proto3"
+	"github.com/stackb/protoreflecthash/test_protos/generated/latest/proto3"
 )
 
 //go:embed testdata/test_protos.protoset.pb
@@ -266,19 +266,23 @@ func TestHashList(t *testing.T) {
 
 func TestHashMap(t *testing.T) {
 	zeroMap := &proto3.IntMaps{IntToString: map[int64]string{0: "ZERO"}}
-	// zeroMsg := zezeroMap.
+	zeroMsg := zeroMap.ProtoReflect()
+	intToStringFd := zeroMsg.Descriptor().Fields().ByName("int_to_string")
+	intToStringKeyFd := intToStringFd.MapKey()
+	intToStringValueFd := intToStringFd.MapValue()
 
 	for name, tc := range map[string]struct {
-		kind  protoreflect.Kind
 		keyFd protoreflect.FieldDescriptor
 		valFd protoreflect.FieldDescriptor
 		value protoreflect.Map
+		obj   map[string]map[int64]string
 		want  string
 	}{
 		"zero": {
-			kind:  protoreflect.StringKind,
-			value: nil,
-			want:  "acac86c0e609ca906f632b0e2dacccb2b77d22b0621f20ebece1a4835b93f6f0",
+			keyFd: intToStringKeyFd,
+			valFd: intToStringValueFd,
+			value: zeroMsg.Get(intToStringFd).Map(),
+			want:  "8cda73a524d09ce6fa10b071cacd4c725521b660ee4a546b6ebdbf139370e9b9",
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
@@ -292,8 +296,10 @@ func TestHashMap(t *testing.T) {
 				t.Errorf("protohash (-want +got):\n%s", diff)
 			}
 
-			if diff := cmp.Diff(tc.want, objectHash(t, tc.value)); diff != "" {
-				t.Errorf("objecthash (-want +got):\n%s", diff)
+			if tc.obj != nil {
+				if diff := cmp.Diff(tc.want, objectHash(t, tc.value)); diff != "" {
+					t.Errorf("objecthash (-want +got):\n%s", diff)
+				}
 			}
 		})
 	}
