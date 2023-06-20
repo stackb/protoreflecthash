@@ -142,13 +142,13 @@ func (h *hasher) hashValue(kind protoreflect.Kind, value protoreflect.Value) ([]
 	case protoreflect.EnumKind:
 		return h.hashEnum(value.Enum())
 	case protoreflect.Uint32Kind,
+		protoreflect.Uint64Kind,
 		protoreflect.Fixed32Kind,
-		protoreflect.Fixed64Kind,
-		protoreflect.Uint64Kind:
+		protoreflect.Fixed64Kind:
 		return h.hashUint(value.Uint())
 	case protoreflect.Int32Kind,
-		protoreflect.Sint32Kind,
 		protoreflect.Int64Kind,
+		protoreflect.Sint32Kind,
 		protoreflect.Sint64Kind,
 		protoreflect.Sfixed32Kind,
 		protoreflect.Sfixed64Kind:
