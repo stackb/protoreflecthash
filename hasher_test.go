@@ -342,6 +342,38 @@ func TestHashMap(t *testing.T) {
 	}
 }
 
+func TestHashEnum(t *testing.T) {
+	for name, tc := range map[string]struct {
+		value protoreflect.EnumNumber
+		want  string
+	}{
+		"zero": {
+			value: 0,
+			want:  "a4e167a76a05add8a8654c169b07b0447a916035aef602df103e8ae0fe2ff390",
+		},
+		"earth": {
+			value: proto3.PlanetV1_EARTH_V1.Number(),
+			want:  "9a83c6cb1126d93de4a30715b28f1f4b26b983c57fb39e6d826d7e893ae4ee74",
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			h := hasher{}
+
+			got := getHash(t, func() ([]byte, error) {
+				return h.hashEnum(tc.value)
+			})
+
+			if diff := cmp.Diff(tc.want, got); diff != "" {
+				t.Errorf("protohash (-want +got):\n%s", diff)
+			}
+
+			if diff := cmp.Diff(tc.want, objectHash(t, tc.value)); diff != "" {
+				t.Errorf("objecthash (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
 func TestHashMessage(t *testing.T) {
 	files := unmarshalProtoRegistryFiles(t, testProtoset)
 
