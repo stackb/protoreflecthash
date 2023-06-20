@@ -1,0 +1,9 @@
+load("@rules_proto//proto:defs.bzl", "proto_descriptor_set")
+
+proto_descriptor_set(
+    name = "protoset",
+    deps = [
+        "//test_protos/schema/proto2:proto2_proto",
+        "//test_protos/schema/proto3:proto3_proto",
+    ],
+)

@@ -21,7 +21,7 @@ import (
 	"github.com/stackb/protoreflecthash/test_protos/generated/latest/proto3"
 )
 
-//go:embed testdata/test_protos.protoset.pb
+//go:embed testdata/protoset.pb
 var testProtoset []byte
 
 func TestHashNil(t *testing.T) {
