@@ -14,18 +14,18 @@
 
 // This is used for tests that involve floats.
 
-syntax = "proto3";
+syntax = "proto2";
 
-package schema.proto3;
+package schema.proto2;
 
-option go_package = "github.com/pcj/objecthash-proto/test_protos/generated/latest/proto3";
+option go_package = "github.com/stackb/protoreflecthash/test_protos/generated/latest/proto2";
 
 message DoubleMessage {
-  double value = 1;
+  optional double value = 1;
   repeated double values = 2;
 }
 
 message FloatMessage {
-  float value = 1;
+  optional float value = 1;
   repeated float values = 2;
 }

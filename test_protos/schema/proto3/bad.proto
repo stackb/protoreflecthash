@@ -12,60 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// This is used for tests that ensure that unsupported proto features and
+// potentially harmful schema settings are detected immediately.
+
 syntax = "proto3";
 
 package schema.proto3;
 
 option go_package = "github.com/pcj/objecthash-proto/test_protos/generated/latest/proto3";
 
-enum PlanetV1 {
-  UNKNOWN_V1 = 0;
-
-  EARTH_V1 = 3;
-  MERCURY_V1 = 1;
-  VENUS_V1 = 2;
-  MARS_V1 = 4;
-  JUPITER_V1 = 5;
-  SATURN_V1 = 6;
-}
-
-message MyFavoritePlanetsV1 {
-  repeated PlanetV1 planets = 1;
-}
-
-enum PlanetV2 {
-  UNKNOWN_V2 = 0;
-
-  EARTH_V2 = 3;
-  MERCURY_V2 = 1;
-  VENUS_V2 = 2;
-  MARS_V2 = 4;
-  JUPITER_V2 = 5;
-  SATURN_V2 = 6;
-  URANUS_V2 = 7;
-  NEPTUNE_V2 = 8;
-  PLUTO_V2 = 9;
-}
-
-message MyFavoritePlanetsV2 {
-  repeated PlanetV2 planets = 1;
-}
-
-enum PlanetV3 {
-  UNKNOWN_V3 = 0;
-
-  EARTH_V3 = 3;
-  MERCURY_V3 = 1;
-  VENUS_V3 = 2;
-  MARS_V3 = 4;
-  JUPITER_V3 = 5;
-  SATURN_V3 = 6;
-  URANUS_V3 = 7;
-  NEPTUNE_V3 = 8;
-
-  DEPRECATED_PLUTO_V3 = 9;
-}
-
-message MyFavoritePlanetsV3 {
-  repeated PlanetV3 planets = 1;
-}
+// This file is empty because proto3 removed most of the features that are
+// potentially harmful for backwards compatibility.
