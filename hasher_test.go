@@ -423,6 +423,152 @@ func TestHashEmpty(t *testing.T) {
 	}
 }
 
+func TestHashFloatFields(t *testing.T) {
+
+	for name, tc := range map[string]struct {
+		fieldNamesAsKeys bool
+		protos           []proto.Message
+		obj              interface{}
+		json             string
+		want             string
+	}{
+		"degenerate": {},
+		"float fields (hashing key field numbers)": {
+			protos: []proto.Message{
+				&proto3.DoubleMessage{Values: []float64{-2, -1, 0, 1, 2}},
+				&proto3.FloatMessage{Values: []float32{-2, -1, 0, 1, 2}},
+			},
+			// obj: map[string][]float64{"values": {-2, -1, 0, 1, 2}},
+			// json: `{2: [-2, -1, 0, 1, 2]}`, skipping json as this is invalid json
+			want: "08775d05cd028265e4956a95aef6c050a45652e9c59462da636a8460c5ed52f3",
+		},
+		"float fields (hashing key field strings)": {
+			fieldNamesAsKeys: true,
+			protos: []proto.Message{
+				&proto3.DoubleMessage{Values: []float64{-2, -1, 0, 1, 2}},
+				&proto3.FloatMessage{Values: []float32{-2, -1, 0, 1, 2}},
+			},
+			obj:  map[string][]float64{"values": {-2, -1, 0, 1, 2}},
+			json: `{"values": [-2, -1, 0, 1, 2]}`,
+			want: "586202dddb0e98bb8ce0b7289e29a9f7397b9b1996f3f8fe788f4cfb230b7ee8",
+		},
+		"float fields (fractions 32)": {
+			fieldNamesAsKeys: true,
+			protos: []proto.Message{
+				&proto3.DoubleMessage{Values: []float64{0.0078125, 7.888609052210118e-31}},
+				&proto3.FloatMessage{Values: []float32{0.0078125, 7.888609052210118e-31}},
+			},
+			obj:  map[string][]float64{"values": {0.0078125, 7.888609052210118e-31}},
+			json: `{"values": [0.0078125, 7.888609052210118e-31]}`,
+			want: "7b7cba0ed312bc6611f0523e7c46ce9a2ed9ecb798eb80e1cdf93c95faf503c7",
+		},
+		"float fields (fractions 64)": {
+			fieldNamesAsKeys: true,
+			protos: []proto.Message{
+				&proto3.DoubleMessage{Values: []float64{-1.0, 1.5, 1000.000244140625, 1267650600228229401496703205376, 32.0, 13.0009765625}},
+				&proto3.FloatMessage{Values: []float32{-1.0, 1.5, 1000.000244140625, 1267650600228229401496703205376, 32.0, 13.0009765625}},
+			},
+			json: `{"values": [-1.0, 1.5, 1000.000244140625, 1267650600228229401496703205376, 32.0, 13.0009765625]}`,
+			want: "ac261ff3d8b933998e3fea278539eb40b15811dd835d224e0150dce4794168b7",
+		},
+		"float fields (Non-equivalence of Floats using different representations)": {
+			fieldNamesAsKeys: true,
+			protos: []proto.Message{
+				&proto3.FloatMessage{Value: 0.1},
+				// A float64 "0.1" is not equal to a float32 "0.1".
+				// However, float32 "0.1" is equal to float64 "1.0000000149011612e-1".
+				&proto3.DoubleMessage{Value: 1.0000000149011612e-1},
+			},
+			obj:  map[string]float32{"value": 0.1},
+			json: `{"value": 1.0000000149011612e-1}`,
+			want: "7081ed6a1e7ad8e7f981a2894a3bd6d3b0b0033b69c03cce84b61dd063f4efaa",
+		},
+		"float fields (Non-equivalence of Floats using different representations - decimal)": {
+			fieldNamesAsKeys: true,
+			protos: []proto.Message{
+				&proto3.FloatMessage{Value: 1.2163543e+25},
+				// The decimal representation of the equivalent 64-bit float is different.
+				&proto3.DoubleMessage{Value: 1.2163543234531120e+25},
+			},
+			obj:  map[string]float32{"value": 1.2163543e+25},
+			json: `{"value": 1.2163543234531120e+25}`,
+			want: "bbb17cf7312f2ba5b0002d781f16d1ab50c3d25dc044ed3428750826a1c68653",
+		},
+		"float fields (no float32 number that is equivalent to a float64 '1e+25')": {
+			fieldNamesAsKeys: true,
+			protos: []proto.Message{
+				&proto3.DoubleMessage{Value: 1e+25},
+			},
+			obj:  map[string]float64{"value": 1e+25},
+			json: `{"value": 1e+25}`,
+			want: "874beabbede24974a9f3f74e3448670e0c42c0aaba082f18b963b72253649362",
+		},
+		"float fields (special NaN)": {
+			fieldNamesAsKeys: true,
+			protos: []proto.Message{
+				&proto3.DoubleMessage{Value: math.NaN()},
+				&proto3.FloatMessage{Value: float32(math.NaN())},
+			},
+			obj: map[string]float64{"value": math.NaN()},
+			// No equivalent JSON: JSON does not support special float values.
+			// See: https://tools.ietf.org/html/rfc4627#section-2.4
+			// json: `{"value": NaN}`,
+			want: "16614de29b0823c41cabc993fa6c45da87e4e74c5d836edbcddcfaaf06ffafd1",
+		},
+		"float fields (special Inf(+))": {
+			fieldNamesAsKeys: true,
+			protos: []proto.Message{
+				&proto3.DoubleMessage{Value: math.Inf(1)},
+				&proto3.FloatMessage{Value: float32(math.Inf(1))},
+			},
+			obj: map[string]float64{"value": math.Inf(1)},
+			// No equivalent JSON: JSON does not support special float values.
+			// See: https://tools.ietf.org/html/rfc4627#section-2.4
+			// json: `{"value": Inf}`,
+			want: "c58cd512e86204e99cb6c11d83bb3daaccdd946e66383004cb9b7f87f762935c",
+		},
+		"float fields (special Inf(-))": {
+			fieldNamesAsKeys: true,
+			protos: []proto.Message{
+				&proto3.DoubleMessage{Value: math.Inf(-1)},
+				&proto3.FloatMessage{Value: float32(math.Inf(-1))},
+			},
+			obj: map[string]float64{"value": math.Inf(-1)},
+			// No equivalent JSON: JSON does not support special float values.
+			// See: https://tools.ietf.org/html/rfc4627#section-2.4
+			// json: `{"value": Inf}`,
+			want: "1a4ffd7e9dc1f915c5b3b821d9194ac7d6d2bdec947aa8c3b3b1e9017c651331",
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			for _, msg := range tc.protos {
+				t.Run(fmt.Sprintf("%+v", msg), func(t *testing.T) {
+					h := hasher{fieldNamesAsKeys: tc.fieldNamesAsKeys}
+
+					got := getHash(t, func() ([]byte, error) {
+						return h.hashMessage(msg.ProtoReflect())
+					})
+
+					if diff := cmp.Diff(tc.want, got); diff != "" {
+						t.Errorf("protohash (-want +got):\n%s", diff)
+					}
+
+					if tc.json != "" {
+						if diff := cmp.Diff(tc.want, jsonHash(t, tc.json)); diff != "" {
+							t.Errorf("jsonhash (-want +got):\n%s", diff)
+						}
+					}
+					if tc.obj != nil {
+						if diff := cmp.Diff(tc.want, objectHash(t, tc.obj)); diff != "" {
+							t.Errorf("objecthash (-want +got):\n%s", diff)
+						}
+					}
+				})
+			}
+		})
+	}
+}
+
 func TestHashMessage(t *testing.T) {
 	files := unmarshalProtoRegistryFiles(t, testProtoset)
 
@@ -436,7 +582,7 @@ func TestHashMessage(t *testing.T) {
 			"Int32MessageZero": {
 				md:              mdByPath(t, files, "test_protos/schema/proto3/integers.proto", "Int32Message"),
 				json:            `{"values": [0, 1, 2]}`,
-				want:            "3565145e346412bf95efa5c03b7abcea45d8e0f9c3ff95c3906c23165062904d",
+				want:            "ec28f92dbcce2dc9e38b48cd7725337ca7df40d729b8523a5b3512f7449e8156",
 				skipEquivalence: true, // No equivalent JSON: JSON does not have an "integer" type. All numbers are floats.
 			},
 		} {
@@ -469,7 +615,7 @@ func TestHashMessage(t *testing.T) {
 			"FloatMessage": {
 				md:              mdByPath(t, files, "test_protos/schema/proto3/floats.proto", "FloatMessage"),
 				json:            `{"values": [-2, -1, 0, 1, 2]}`,
-				want:            "4d7cefcea4f6407f693db31b68afe0bdfc5a450a2edd89a5baf8a28cb5552d06",
+				want:            "08775d05cd028265e4956a95aef6c050a45652e9c59462da636a8460c5ed52f3",
 				skipEquivalence: true, // No equivalent JSON: JSON does not have an "integer" type. All numbers are floats.
 			},
 		} {

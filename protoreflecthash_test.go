@@ -20,7 +20,7 @@ func TestString(t *testing.T) {
 		"Int32MessageZero": {
 			md:   mdByPath(t, files, "test_protos/schema/proto3/integers.proto", "Int32Message"),
 			json: `{"values": [0, 1, 2]}`,
-			want: "3565145e346412bf95efa5c03b7abcea45d8e0f9c3ff95c3906c23165062904d",
+			want: "ec28f92dbcce2dc9e38b48cd7725337ca7df40d729b8523a5b3512f7449e8156",
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
