@@ -12,14 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-syntax = "proto3";
+syntax = "proto2";
 
-package schema.proto3;
+package schema.proto2;
 
-option go_package = "github.com/pcj/objecthash-proto/test_protos/generated/latest/proto3";
+option go_package = "github.com/stackb/protoreflecthash/test_protos/generated/latest/proto2";
 
-import "test_protos/schema/proto3/simple.proto";
-import "test_protos/schema/proto3/planets.proto";
+import "test_protos/schema/proto2/simple.proto";
+import "test_protos/schema/proto2/planets.proto";
+
 
 message BoolMaps {
   map<bool, bool> bool_to_bool = 1;

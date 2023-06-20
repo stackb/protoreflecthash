@@ -12,35 +12,35 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-syntax = "proto3";
+syntax = "proto2";
 
-package schema.proto3;
+package schema.proto2;
 
-option go_package = "github.com/pcj/objecthash-proto/test_protos/generated/latest/proto3";
+option go_package = "github.com/stackb/protoreflecthash/test_protos/generated/latest/proto2";
 
 message Empty {
 }
 
 message Simple {
-  bool bool_field = 1;
-  bytes bytes_field = 3;
-  double double_field = 5;
-  fixed32 fixed32_field = 7;
-  fixed64 fixed64_field = 9;
-  float float_field = 11;
-  int32 int32_field = 13;
-  int64 int64_field = 15;
-  sfixed32 sfixed32_field = 17;
-  sfixed64 sfixed64_field = 19;
-  sint32 sint32_field = 21;
-  sint64 sint64_field = 23;
-  string string_field = 25;
-  uint32 uint32_field = 27;
-  uint64 uint64_field = 29;
+  optional bool bool_field = 1;
+  optional bytes bytes_field = 3;
+  optional double double_field = 5;
+  optional fixed32 fixed32_field = 7;
+  optional fixed64 fixed64_field = 9;
+  optional float float_field = 11;
+  optional int32 int32_field = 13;
+  optional int64 int64_field = 15;
+  optional sfixed32 sfixed32_field = 17;
+  optional sfixed64 sfixed64_field = 19;
+  optional sint32 sint32_field = 21;
+  optional sint64 sint64_field = 23;
+  optional string string_field = 25;
+  optional uint32 uint32_field = 27;
+  optional uint64 uint64_field = 29;
 
-  Simple simple_field = 31;
-  Repetitive repetitive_field = 33;
-  Singleton singleton_field = 35;
+  optional Simple simple_field = 31;
+  optional Repetitive repetitive_field = 33;
+  optional Singleton singleton_field = 35;
 }
 
 message Repetitive {

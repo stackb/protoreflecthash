@@ -12,11 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-syntax = "proto3";
+syntax = "proto2";
 
-package schema.proto3;
+package schema.proto2;
 
-option go_package = "github.com/pcj/objecthash-proto/test_protos/generated/latest/proto3";
+option go_package = "github.com/stackb/protoreflecthash/test_protos/generated/latest/proto2";
 
 enum PlanetV1 {
   UNKNOWN_V1 = 0;
