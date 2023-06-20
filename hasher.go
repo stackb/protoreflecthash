@@ -40,6 +40,11 @@ func (h *hasher) HashProto(msg protoreflect.Message) ([]byte, error) {
 func (h *hasher) hashMessage(msg protoreflect.Message) ([]byte, error) {
 	md := msg.Descriptor()
 
+	// TOOD(pcj): what is the correct handling of placeholder types?
+	if md.IsPlaceholder() {
+		return nil, nil
+	}
+
 	var buf bytes.Buffer
 
 	fhash, err := h.hashFields(msg, md.Fields())
@@ -92,22 +97,31 @@ func (h *hasher) hashFields(msg protoreflect.Message, fields protoreflect.FieldD
 		data   []byte
 	}
 
-	hashes := make([]fieldHash, fields.Len())
+	hashes := make([]fieldHash, 0, fields.Len())
 	for i := 0; i < fields.Len(); i++ {
 		fd := fields.Get(i)
+		if !msg.Has(fd) {
+			continue
+		}
 		value := msg.Get(fd)
+		defaultValue := fd.Default()
+		if value.Equal(defaultValue) {
+			continue
+		}
 		data, err := h.hashField(fd, value)
 		if err != nil {
-			return nil, fmt.Errorf("hashing field %d (%s): %w", i, fd.FullName(), err)
+			return nil, fmt.Errorf("hashing field %d (%s = %d): %w", i, fd.FullName(), fd.Number(), err)
 		}
-		hashes[i] = fieldHash{number: i, data: data}
+		hashes = append(hashes, fieldHash{number: int(fd.Number()), data: data})
 	}
+	sort.Slice(hashes, func(i, j int) bool {
+		return hashes[i].number < hashes[j].number
+	})
 
 	var buf bytes.Buffer
 	for _, hash := range hashes {
 		buf.Write(hash.data)
 	}
-
 	return buf.Bytes(), nil
 }
 
@@ -127,16 +141,17 @@ func (h *hasher) hashValue(kind protoreflect.Kind, value protoreflect.Value) ([]
 		return h.hashBool(value.Bool())
 	case protoreflect.EnumKind:
 		return h.hashEnum(value.Enum())
-	case protoreflect.Int32Kind,
-		protoreflect.Sint32Kind,
-		protoreflect.Uint32Kind,
-		protoreflect.Int64Kind,
-		protoreflect.Sint64Kind,
+	case protoreflect.Uint32Kind,
 		protoreflect.Uint64Kind,
-		protoreflect.Sfixed32Kind,
 		protoreflect.Fixed32Kind,
-		protoreflect.Sfixed64Kind,
 		protoreflect.Fixed64Kind:
+		return h.hashUint(value.Uint())
+	case protoreflect.Int32Kind,
+		protoreflect.Int64Kind,
+		protoreflect.Sint32Kind,
+		protoreflect.Sint64Kind,
+		protoreflect.Sfixed32Kind,
+		protoreflect.Sfixed64Kind:
 		return h.hashInt(value.Int())
 	case protoreflect.FloatKind,
 		protoreflect.DoubleKind:
@@ -167,6 +182,10 @@ func (h *hasher) hashEnum(value protoreflect.EnumNumber) ([]byte, error) {
 
 func (h *hasher) hashInt(value int64) ([]byte, error) {
 	return hashInt64(value)
+}
+
+func (h *hasher) hashUint(value uint64) ([]byte, error) {
+	return hashUint64(value)
 }
 
 func (h *hasher) hashFloat(value float64) ([]byte, error) {
