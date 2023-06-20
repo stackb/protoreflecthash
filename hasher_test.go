@@ -374,6 +374,55 @@ func TestHashEnum(t *testing.T) {
 	}
 }
 
+func TestHashEmpty(t *testing.T) {
+	emptyHash := "18ac3e7343f016890c510e93f935261169d9e3f565436429830faf0934f4f8e4"
+	emptyJson := "{}"
+
+	if diff := cmp.Diff(emptyHash, jsonHash(t, emptyJson)); diff != "" {
+		t.Errorf("jsonhash (-want +got):\n%s", diff)
+	}
+
+	for _, tc := range []struct {
+		msg proto.Message
+	}{
+		{&proto3.Empty{}},
+		// Empty repeated fields are ignored.
+		{&proto3.Repetitive{StringField: []string{}}},
+		// Empty map fields are ignored.
+		{&proto3.StringMaps{StringToString: map[string]string{}}},
+		// Proto3 scalar fields set to their default values are considered empty.
+		{&proto3.Simple{BoolField: false}},
+		{&proto3.Simple{BytesField: []byte{}}},
+		{&proto3.Simple{DoubleField: 0}},
+		{&proto3.Simple{DoubleField: 0.0}},
+		{&proto3.Simple{Fixed32Field: 0}},
+		{&proto3.Simple{Fixed64Field: 0}},
+		{&proto3.Simple{FloatField: 0}},
+		{&proto3.Simple{FloatField: 0.0}},
+		{&proto3.Simple{Int32Field: 0}},
+		{&proto3.Simple{Int64Field: 0}},
+		{&proto3.Simple{Sfixed32Field: 0}},
+		{&proto3.Simple{Sfixed64Field: 0}},
+		{&proto3.Simple{Sint32Field: 0}},
+		{&proto3.Simple{Sint64Field: 0}},
+		{&proto3.Simple{StringField: ""}},
+		{&proto3.Simple{Uint32Field: 0}},
+		{&proto3.Simple{Uint64Field: 0}},
+	} {
+		t.Run(fmt.Sprintf("%+v", tc.msg), func(t *testing.T) {
+			h := hasher{}
+
+			got := getHash(t, func() ([]byte, error) {
+				return h.hashMessage(tc.msg.ProtoReflect())
+			})
+
+			if diff := cmp.Diff(emptyHash, got); diff != "" {
+				t.Errorf("protohash (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
 func TestHashMessage(t *testing.T) {
 	files := unmarshalProtoRegistryFiles(t, testProtoset)
 
@@ -387,7 +436,7 @@ func TestHashMessage(t *testing.T) {
 			"Int32MessageZero": {
 				md:              mdByPath(t, files, "test_protos/schema/proto3/integers.proto", "Int32Message"),
 				json:            `{"values": [0, 1, 2]}`,
-				want:            "48594d0a83a5b3c003ec7399e6b87d946649a3893e03a166cb947be1d0754bc9",
+				want:            "3565145e346412bf95efa5c03b7abcea45d8e0f9c3ff95c3906c23165062904d",
 				skipEquivalence: true, // No equivalent JSON: JSON does not have an "integer" type. All numbers are floats.
 			},
 		} {
@@ -420,7 +469,7 @@ func TestHashMessage(t *testing.T) {
 			"FloatMessage": {
 				md:              mdByPath(t, files, "test_protos/schema/proto3/floats.proto", "FloatMessage"),
 				json:            `{"values": [-2, -1, 0, 1, 2]}`,
-				want:            "cd587478cd18e449dcb50fc6bb2e7322d51c259f8eae35218a42e608f8817c54",
+				want:            "4d7cefcea4f6407f693db31b68afe0bdfc5a450a2edd89a5baf8a28cb5552d06",
 				skipEquivalence: true, // No equivalent JSON: JSON does not have an "integer" type. All numbers are floats.
 			},
 		} {

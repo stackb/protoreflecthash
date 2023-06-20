@@ -51,6 +51,10 @@ func hashFloat(f float64) ([]byte, error) {
 	return hash(floatIdentifier, []byte(normalizedFloat))
 }
 
+func hashUint64(i uint64) ([]byte, error) {
+	return hash(intIdentifier, []byte(fmt.Sprintf("%d", i)))
+}
+
 func hashInt64(i int64) ([]byte, error) {
 	return hash(intIdentifier, []byte(fmt.Sprintf("%d", i)))
 }
