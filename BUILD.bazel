@@ -1,0 +1,43 @@
+load("@rules_go//go:def.bzl", "go_library", "go_test")
+load("@gazelle//:def.bzl", "gazelle")
+
+# gazelle:prefix github.com/stackb/protoreflecthash
+
+gazelle(name = "gazelle")
+
+go_library(
+    name = "protoreflecthash",
+    srcs = [
+        "hasher.go",
+        "hashing.go",
+        "protoreflecthash.go",
+    ],
+    importpath = "github.com/stackb/protoreflecthash",
+    visibility = ["//visibility:public"],
+    deps = [
+        "@org_golang_google_protobuf//proto",
+        "@org_golang_google_protobuf//reflect/protoreflect",
+    ],
+)
+
+go_test(
+    name = "protoreflecthash_test",
+    srcs = [
+        "hasher_test.go",
+        "protoreflecthash_test.go",
+    ],
+    data = glob(["testdata/**"]),
+    embed = [":protoreflecthash"],
+    embedsrcs = ["testdata/test_protos.protoset.pb"],
+    deps = [
+        "@com_github_benlaurie_objecthash//go/objecthash:go_default_library",
+        "@com_github_google_go_cmp//cmp",
+        "@org_golang_google_protobuf//encoding/protojson",
+        "@org_golang_google_protobuf//proto",
+        "@org_golang_google_protobuf//reflect/protodesc",
+        "@org_golang_google_protobuf//reflect/protoreflect",
+        "@org_golang_google_protobuf//reflect/protoregistry",
+        "@org_golang_google_protobuf//types/descriptorpb",
+        "@org_golang_google_protobuf//types/dynamicpb",
+    ],
+)

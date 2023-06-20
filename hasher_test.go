@@ -2,7 +2,6 @@ package protoreflecthash
 
 import (
 	_ "embed"
-	"encoding/hex"
 	"fmt"
 	"log"
 	"math"
@@ -364,7 +363,7 @@ func getHash(t *testing.T, fn func() ([]byte, error)) string {
 	if err != nil {
 		t.Fatal(err)
 	}
-	return hex.EncodeToString(hash)
+	return fmt.Sprintf("%x", hash)
 }
 
 func objectHash(t *testing.T, value interface{}) string {

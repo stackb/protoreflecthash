@@ -1,0 +1,18 @@
+load("@rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "proto3",
+    srcs = [
+        "floats.pb.go",
+        "integers.pb.go",
+        "maps.pb.go",
+        "planets.pb.go",
+        "simple.pb.go",
+    ],
+    importpath = "github.com/stackb/protoreflecthash/test_protos/generated/latest/proto3",
+    visibility = ["//visibility:public"],
+    deps = [
+        "@org_golang_google_protobuf//reflect/protoreflect",
+        "@org_golang_google_protobuf//runtime/protoimpl",
+    ],
+)
