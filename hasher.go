@@ -9,15 +9,32 @@ import (
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
+type ProtoHasherOption func(*hasher)
+
 type ProtoHasher interface {
 	HashProto(msg protoreflect.Message) ([]byte, error)
 }
 
-func NewHasher() ProtoHasher {
+func NewHasher(options ...ProtoHasherOption) ProtoHasher {
 	return &hasher{}
 }
 
+func FieldNamesAsKeys() ProtoHasherOption {
+	return func(h *hasher) {
+		h.fieldNamesAsKeys = true
+	}
+}
+
 type hasher struct {
+	// Whether to use the proto field name as its key, as opposed to using the
+	// tag number as the key.
+	fieldNamesAsKeys bool
+}
+
+type fieldHashEntry struct {
+	number int32
+	khash  []byte
+	vhash  []byte
 }
 
 // HashProto implements MessageHasher
@@ -45,19 +62,29 @@ func (h *hasher) hashMessage(msg protoreflect.Message) ([]byte, error) {
 		return nil, nil
 	}
 
+	var hashes []fieldHashEntry
+
+	fieldHashes, err := h.hashFields(msg, md.Fields())
+	if err != nil {
+		return nil, fmt.Errorf("hashing fields: %w", err)
+	}
+	hashes = append(hashes, fieldHashes...)
+
+	sort.Slice(hashes, func(i, j int) bool {
+		return hashes[i].number < hashes[j].number
+	})
+
 	var buf bytes.Buffer
-
-	fhash, err := h.hashFields(msg, md.Fields())
-	if err != nil {
-		return nil, fmt.Errorf("hashing fields: %w", err)
+	for _, hash := range hashes {
+		buf.Write(hash.khash)
+		buf.Write(hash.vhash)
 	}
-	buf.Write(fhash)
 
-	ohash, err := h.hashOneofs(msg, md.Oneofs())
-	if err != nil {
-		return nil, fmt.Errorf("hashing fields: %w", err)
-	}
-	buf.Write(ohash)
+	// ohash, err := h.hashOneofs(msg, md.Oneofs())
+	// if err != nil {
+	// 	return nil, fmt.Errorf("hashing fields: %w", err)
+	// }
+	// buf.Write(ohash)
 
 	identifier := mapIdentifier
 	// if hasher.messageIdentifier != "" {
@@ -73,15 +100,15 @@ func (h *hasher) hashOneofs(msg protoreflect.Message, oneofs protoreflect.OneofD
 	}
 
 	hashes := make([]oneOfHash, oneofs.Len())
-	for i := 0; i < oneofs.Len(); i++ {
-		od := oneofs.Get(i)
-		fields := od.Fields()
-		data, err := h.hashFields(msg, fields)
-		if err != nil {
-			return nil, fmt.Errorf("hashing field %d (%s): %w", i, od.FullName(), err)
-		}
-		hashes[i] = oneOfHash{number: i, data: data}
-	}
+	// for i := 0; i < oneofs.Len(); i++ {
+	// 	od := oneofs.Get(i)
+	// 	fields := od.Fields()
+	// 	data, err := h.hashFields(msg, fields)
+	// 	if err != nil {
+	// 		return nil, fmt.Errorf("hashing field %d (%s): %w", i, od.FullName(), err)
+	// 	}
+	// 	hashes[i] = oneOfHash{number: i, v: data}
+	// }
 
 	var buf bytes.Buffer
 	for _, hash := range hashes {
@@ -91,13 +118,13 @@ func (h *hasher) hashOneofs(msg protoreflect.Message, oneofs protoreflect.OneofD
 	return buf.Bytes(), nil
 }
 
-func (h *hasher) hashFields(msg protoreflect.Message, fields protoreflect.FieldDescriptors) ([]byte, error) {
-	type fieldHash struct {
-		number int
-		data   []byte
-	}
+func (h *hasher) hashFields(msg protoreflect.Message, fields protoreflect.FieldDescriptors) ([]fieldHashEntry, error) {
+	// type fieldHash struct {
+	// 	number int
+	// 	data   []byte
+	// }
 
-	hashes := make([]fieldHash, 0, fields.Len())
+	hashes := make([]fieldHashEntry, 0, fields.Len())
 	for i := 0; i < fields.Len(); i++ {
 		fd := fields.Get(i)
 		if !msg.Has(fd) {
@@ -108,21 +135,31 @@ func (h *hasher) hashFields(msg protoreflect.Message, fields protoreflect.FieldD
 		if value.Equal(defaultValue) {
 			continue
 		}
-		data, err := h.hashField(fd, value)
+
+		var khash []byte
+		var err error
+		if h.fieldNamesAsKeys {
+			khash, err = hashUnicode(string(fd.Name()))
+		} else {
+			khash, err = hashInt64(int64(fd.Number()))
+		}
+		if err != nil {
+			return nil, fmt.Errorf("hashing key field %d (%s = %d): %w", i, fd.FullName(), fd.Number(), err)
+		}
+
+		vhash, err := h.hashField(fd, value)
 		if err != nil {
 			return nil, fmt.Errorf("hashing field %d (%s = %d): %w", i, fd.FullName(), fd.Number(), err)
 		}
-		hashes = append(hashes, fieldHash{number: int(fd.Number()), data: data})
-	}
-	sort.Slice(hashes, func(i, j int) bool {
-		return hashes[i].number < hashes[j].number
-	})
 
-	var buf bytes.Buffer
-	for _, hash := range hashes {
-		buf.Write(hash.data)
+		hashes = append(hashes, fieldHashEntry{
+			number: int32(fd.Number()),
+			khash:  khash,
+			vhash:  vhash,
+		})
 	}
-	return buf.Bytes(), nil
+
+	return hashes, nil
 }
 
 func (h *hasher) hashField(fd protoreflect.FieldDescriptor, value protoreflect.Value) ([]byte, error) {
