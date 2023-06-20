@@ -2,6 +2,7 @@ package protoreflecthash
 
 import (
 	_ "embed"
+	"encoding/json"
 	"fmt"
 	"log"
 	"math"
@@ -265,40 +266,76 @@ func TestHashList(t *testing.T) {
 }
 
 func TestHashMap(t *testing.T) {
-	zeroMap := &proto3.IntMaps{IntToString: map[int64]string{0: "ZERO"}}
-	zeroMsg := zeroMap.ProtoReflect()
-	intToStringFd := zeroMsg.Descriptor().Fields().ByName("int_to_string")
-	intToStringKeyFd := intToStringFd.MapKey()
-	intToStringValueFd := intToStringFd.MapValue()
-
 	for name, tc := range map[string]struct {
-		keyFd protoreflect.FieldDescriptor
-		valFd protoreflect.FieldDescriptor
-		value protoreflect.Map
-		obj   map[string]map[int64]string
-		want  string
+		value        proto.Message
+		mapFieldName string
+		obj          interface{}
+		json         string
+		want         string
 	}{
-		"zero": {
-			keyFd: intToStringKeyFd,
-			valFd: intToStringValueFd,
-			value: zeroMsg.Get(intToStringFd).Map(),
-			want:  "8cda73a524d09ce6fa10b071cacd4c725521b660ee4a546b6ebdbf139370e9b9",
+		"IntMaps.int_to_string": {
+			value:        &proto3.IntMaps{IntToString: map[int64]string{0: "ZERO"}},
+			mapFieldName: "int_to_string",
+			obj:          map[int64]string{0: "ZERO"},
+			// json:         `{0:"ZERO"}`, // can't use json representation in this case
+			want: "8cda73a524d09ce6fa10b071cacd4c725521b660ee4a546b6ebdbf139370e9b9",
 		},
+		"StringMaps.string_to_bool": {
+			value:        &proto3.StringMaps{StringToBool: map[string]bool{"true": true}},
+			mapFieldName: "string_to_bool",
+			obj:          map[string]bool{"true": true},
+			json:         `{"true":true}`,
+			want:         "d84d7d0593f90628672ccc4fbc89e31c51a847f45f39d98b95ea032c8de25e64",
+		},
+		"StringMaps.string_to_string": {
+			value:        &proto3.StringMaps{StringToString: map[string]string{"foo": "bar"}},
+			mapFieldName: "string_to_string",
+			obj:          map[string]string{"foo": "bar"},
+			json:         `{"foo":"bar"}`,
+			want:         "7ef5237c3027d6c58100afadf37796b3d351025cf28038280147d42fdc53b960",
+		},
+		"StringMaps.string_to_string_k123": {
+			value:        &proto3.StringMaps{StringToString: map[string]string{"k1": "v1", "k2": "v2", "k3": "v3"}},
+			mapFieldName: "string_to_string",
+			obj:          map[string]string{"k1": "v1", "k2": "v2", "k3": "v3"},
+			json:         `{"k1":"v1","k2":"v2","k3":"v3"}`,
+			want:         "ddd65f1f7568269a30df7cafc26044537dc2f02a1a0d830da61762fc3e687057",
+		},
+		"StringMaps.string_to_string_k213": {
+			value:        &proto3.StringMaps{StringToString: map[string]string{"k2": "v2", "k1": "v1", "k3": "v3"}},
+			mapFieldName: "string_to_string",
+			obj:          map[string]string{"k2": "v2", "k1": "v1", "k3": "v3"},
+			json:         `{"k1":"v1","k2":"v2","k3":"v3"}`,
+			want:         "ddd65f1f7568269a30df7cafc26044537dc2f02a1a0d830da61762fc3e687057",
+		},
+		//
 	} {
 		t.Run(name, func(t *testing.T) {
 			h := hasher{}
 
+			msg := tc.value.ProtoReflect()
+			fd := msg.Descriptor().Fields().ByName(protoreflect.Name(tc.mapFieldName))
+
 			got := getHash(t, func() ([]byte, error) {
-				return h.hashMap(tc.keyFd, tc.valFd, tc.value)
+				return h.hashMap(fd.MapKey(), fd.MapValue(), msg.Get(fd).Map())
 			})
 
 			if diff := cmp.Diff(tc.want, got); diff != "" {
 				t.Errorf("protohash (-want +got):\n%s", diff)
 			}
-
+			if tc.json != "" {
+				if diff := cmp.Diff(tc.want, jsonHash(t, tc.json)); diff != "" {
+					t.Errorf("jsonhash (-want +got):\n%s", diff)
+				}
+			}
 			if tc.obj != nil {
-				if diff := cmp.Diff(tc.want, objectHash(t, tc.value)); diff != "" {
+				if diff := cmp.Diff(tc.want, objectHash(t, tc.obj)); diff != "" {
 					t.Errorf("objecthash (-want +got):\n%s", diff)
+				}
+				if tc.json != "" {
+					if diff := cmp.Diff(tc.json, jsonString(t, tc.obj)); diff != "" {
+						t.Errorf("jsonstring (-want +got):\n%s", diff)
+					}
 				}
 			}
 		})
@@ -419,6 +456,14 @@ func objectHash(t *testing.T, value interface{}) string {
 		t.Fatal(err)
 	}
 	return hash
+}
+
+func jsonString(t *testing.T, value interface{}) string {
+	data, err := json.Marshal(value)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return string(data)
 }
 
 func jsonHash(t *testing.T, value string) string {
