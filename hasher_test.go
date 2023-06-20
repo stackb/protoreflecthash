@@ -2,7 +2,6 @@ package protoreflecthash
 
 import (
 	_ "embed"
-	"encoding/hex"
 	"fmt"
 	"log"
 	"math"
@@ -17,6 +16,8 @@ import (
 	"google.golang.org/protobuf/reflect/protoregistry"
 	"google.golang.org/protobuf/types/descriptorpb"
 	"google.golang.org/protobuf/types/dynamicpb"
+
+	"github.com/stackb/protoreflecthash/test_protos/generated/latest/proto3"
 )
 
 //go:embed testdata/test_protos.protoset.pb
@@ -263,6 +264,47 @@ func TestHashList(t *testing.T) {
 	}
 }
 
+func TestHashMap(t *testing.T) {
+	zeroMap := &proto3.IntMaps{IntToString: map[int64]string{0: "ZERO"}}
+	zeroMsg := zeroMap.ProtoReflect()
+	intToStringFd := zeroMsg.Descriptor().Fields().ByName("int_to_string")
+	intToStringKeyFd := intToStringFd.MapKey()
+	intToStringValueFd := intToStringFd.MapValue()
+
+	for name, tc := range map[string]struct {
+		keyFd protoreflect.FieldDescriptor
+		valFd protoreflect.FieldDescriptor
+		value protoreflect.Map
+		obj   map[string]map[int64]string
+		want  string
+	}{
+		"zero": {
+			keyFd: intToStringKeyFd,
+			valFd: intToStringValueFd,
+			value: zeroMsg.Get(intToStringFd).Map(),
+			want:  "8cda73a524d09ce6fa10b071cacd4c725521b660ee4a546b6ebdbf139370e9b9",
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			h := hasher{}
+
+			got := getHash(t, func() ([]byte, error) {
+				return h.hashMap(tc.keyFd, tc.valFd, tc.value)
+			})
+
+			if diff := cmp.Diff(tc.want, got); diff != "" {
+				t.Errorf("protohash (-want +got):\n%s", diff)
+			}
+
+			if tc.obj != nil {
+				if diff := cmp.Diff(tc.want, objectHash(t, tc.value)); diff != "" {
+					t.Errorf("objecthash (-want +got):\n%s", diff)
+				}
+			}
+		})
+	}
+}
+
 func TestHashMessage(t *testing.T) {
 	files := unmarshalProtoRegistryFiles(t, testProtoset)
 
@@ -364,7 +406,7 @@ func getHash(t *testing.T, fn func() ([]byte, error)) string {
 	if err != nil {
 		t.Fatal(err)
 	}
-	return hex.EncodeToString(hash)
+	return fmt.Sprintf("%x", hash)
 }
 
 func objectHash(t *testing.T, value interface{}) string {
