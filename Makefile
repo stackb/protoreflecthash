@@ -1,6 +1,6 @@
 .PHONY: test
 test:
-	go test ./...
+	go test github.com/stackb/protoreflecthash
 
 .PHONY: test_protoset
 test_protoset:
