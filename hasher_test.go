@@ -765,19 +765,111 @@ func TestHashOneofFields(t *testing.T) {
 			want: "18ac3e7343f016890c510e93f935261169d9e3f565436429830faf0934f4f8e4",
 		},
 		"one selected but empty": {
-			fieldNamesAsKeys: true,
+			fieldNamesAsKeys: false,
 			protos: []proto.Message{
 				// Only proto2 has empty values.
 				&pb2_latest.Simple{BoolField: proto.Bool(false)},
 
-				// &pb2_latest.Singleton{Singleton: &pb2_latest.Singleton_TheBool{}},
-				// &pb3_latest.Singleton{Singleton: &pb3_latest.Singleton_TheBool{}},
+				&pb2_latest.Singleton{Singleton: &pb2_latest.Singleton_TheBool{}},
+				&pb3_latest.Singleton{Singleton: &pb3_latest.Singleton_TheBool{}},
 
-				// &pb2_latest.Singleton{Singleton: &pb2_latest.Singleton_TheBool{TheBool: false}},
-				// &pb3_latest.Singleton{Singleton: &pb3_latest.Singleton_TheBool{TheBool: false}},
+				&pb2_latest.Singleton{Singleton: &pb2_latest.Singleton_TheBool{TheBool: false}},
+				&pb3_latest.Singleton{Singleton: &pb3_latest.Singleton_TheBool{TheBool: false}},
 			},
 			obj:  map[int64]bool{1: false},
 			want: "8a956cfa8e9b45b738cb8dc8a3dc7126dab3cbd2c07c80fa1ec312a1a31ed709",
+		},
+		"One of the options selected with content (empty string)": {
+			fieldNamesAsKeys: false,
+			protos: []proto.Message{
+				// Only proto2 has empty values.
+				&pb2_latest.Simple{StringField: proto.String("")},
+
+				&pb2_latest.Singleton{Singleton: &pb2_latest.Singleton_TheString{}},
+				&pb3_latest.Singleton{Singleton: &pb3_latest.Singleton_TheString{}},
+
+				&pb2_latest.Singleton{Singleton: &pb2_latest.Singleton_TheString{TheString: ""}},
+				&pb3_latest.Singleton{Singleton: &pb3_latest.Singleton_TheString{TheString: ""}},
+			},
+			obj:  map[int64]string{25: ""},
+			want: "79cff9d2d0ee6c6071c82b58d1a2fcf056b58c4501606862489e5731644c755a",
+		},
+		"One of the options selected with content (ints)": {
+			fieldNamesAsKeys: false,
+			protos: []proto.Message{
+				// Only proto2 has empty values.
+				&pb2_latest.Simple{Int32Field: proto.Int32(0)},
+
+				&pb2_latest.Singleton{Singleton: &pb2_latest.Singleton_TheInt32{}},
+				&pb3_latest.Singleton{Singleton: &pb3_latest.Singleton_TheInt32{}},
+
+				&pb2_latest.Singleton{Singleton: &pb2_latest.Singleton_TheInt32{TheInt32: 0}},
+				&pb3_latest.Singleton{Singleton: &pb3_latest.Singleton_TheInt32{TheInt32: 0}},
+			},
+			obj:  map[int64]int32{13: 0},
+			want: "bafd42680c987c47a76f72e08ed975877162efdb550d2c564c758dc7d988468f",
+		},
+		"One of the options selected with content (strings)": {
+			fieldNamesAsKeys: false,
+			protos: []proto.Message{
+				&pb2_latest.Simple{StringField: proto.String("TEST!")},
+				&pb3_latest.Simple{StringField: "TEST!"},
+				//
+				// For protobufs, it is legal (and backwards-compatible) to update a message by wrapping
+				// an existing field within a oneof rule. Therefore, both objects (using old schem and
+				// the new schema) should result in the same objecthash.
+				//
+				// Example:
+				//
+				// # Old schema:               | # New schema:
+				// message Simple {            | message Singleton {
+				//   string string_field = 25; |   oneof singleton {
+				// }                           |     string the_string = 25;
+				//                             |   }
+				//                             | }
+				//
+				// The following examples demonstrate this equivalence.
+				&pb2_latest.Singleton{Singleton: &pb2_latest.Singleton_TheString{TheString: "TEST!"}},
+				&pb3_latest.Singleton{Singleton: &pb3_latest.Singleton_TheString{TheString: "TEST!"}},
+			},
+			obj:  map[int64]string{25: "TEST!"},
+			want: "336cdbca99fd46157bc47bcc456f0ac7f1ef3be7a79acf3535f671434b53944f",
+		},
+		"One of the options selected with content (equiv case ints)": {
+			fieldNamesAsKeys: false,
+			protos: []proto.Message{
+				&pb2_latest.Simple{Int32Field: proto.Int32(99)},
+				&pb3_latest.Simple{Int32Field: 99},
+
+				&pb2_latest.Singleton{Singleton: &pb2_latest.Singleton_TheInt32{TheInt32: 99}},
+				&pb3_latest.Singleton{Singleton: &pb3_latest.Singleton_TheInt32{TheInt32: 99}},
+			},
+			obj:  map[int64]int32{13: 99},
+			want: "65517521bc278528d25caf1643da0f094fd88dad50205c9743e3c984a7c53b7d",
+		},
+		"One of the options selected with content (nested)": {
+			fieldNamesAsKeys: false,
+			protos: []proto.Message{
+				&pb2_latest.Simple{SingletonField: &pb2_latest.Singleton{}},
+				&pb3_latest.Simple{SingletonField: &pb3_latest.Singleton{}},
+
+				&pb2_latest.Singleton{Singleton: &pb2_latest.Singleton_TheSingleton{TheSingleton: &pb2_latest.Singleton{}}},
+				&pb3_latest.Singleton{Singleton: &pb3_latest.Singleton_TheSingleton{TheSingleton: &pb3_latest.Singleton{}}},
+			},
+			obj:  map[int64]map[int64]int64{35: {}},
+			want: "4967c72525c764229f9fbf1294764c9aedc0d4f9f4c52e04a19c7f35ca65f517",
+		},
+		"One of the options selected with content (double nested)": {
+			fieldNamesAsKeys: false,
+			protos: []proto.Message{
+				&pb2_latest.Simple{SingletonField: &pb2_latest.Singleton{Singleton: &pb2_latest.Singleton_TheSingleton{TheSingleton: &pb2_latest.Singleton{}}}},
+				&pb3_latest.Simple{SingletonField: &pb3_latest.Singleton{Singleton: &pb3_latest.Singleton_TheSingleton{TheSingleton: &pb3_latest.Singleton{}}}},
+
+				&pb2_latest.Singleton{Singleton: &pb2_latest.Singleton_TheSingleton{TheSingleton: &pb2_latest.Singleton{Singleton: &pb2_latest.Singleton_TheSingleton{TheSingleton: &pb2_latest.Singleton{}}}}},
+				&pb3_latest.Singleton{Singleton: &pb3_latest.Singleton_TheSingleton{TheSingleton: &pb3_latest.Singleton{Singleton: &pb3_latest.Singleton_TheSingleton{TheSingleton: &pb3_latest.Singleton{}}}}},
+			},
+			obj:  map[int64]map[int64]map[int64]int64{35: {35: {}}},
+			want: "8ea95bbda0f42073a61f46f9f375f48d5a7cb034fce56b44f958470fda5236d0",
 		},
 	} {
 		tc.Check(name, t)

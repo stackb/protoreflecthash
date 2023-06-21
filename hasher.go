@@ -70,11 +70,15 @@ func (h *hasher) hashMessage(msg protoreflect.Message) ([]byte, error) {
 	}
 	hashes = append(hashes, fieldHashes...)
 
-	oneofHashes, err := h.hashOneofs(msg, md.Oneofs())
-	if err != nil {
-		return nil, fmt.Errorf("hashing oneofs: %w", err)
+	// keeping this dead code here to remind myself that the hashFields code
+	// already deals with oneofs, we don't need additional separate handling of oneofs.
+	if false {
+		oneofHashes, err := h.hashOneofs(msg, md.Oneofs())
+		if err != nil {
+			return nil, fmt.Errorf("hashing oneofs: %w", err)
+		}
+		hashes = append(hashes, oneofHashes...)
 	}
-	hashes = append(hashes, oneofHashes...)
 
 	sort.Slice(hashes, func(i, j int) bool {
 		return hashes[i].number < hashes[j].number
@@ -98,11 +102,18 @@ func (h *hasher) hashOneofs(msg protoreflect.Message, oneofs protoreflect.OneofD
 
 	for i := 0; i < oneofs.Len(); i++ {
 		od := oneofs.Get(i)
-		fieldHashes, err := h.hashFields(msg, od.Fields())
+		fd := msg.WhichOneof(od)
+		if fd == nil {
+			continue
+		}
+		if !msg.Has(fd) {
+			continue
+		}
+		hash, err := h.hashField(fd, msg.Get(fd))
 		if err != nil {
 			return nil, fmt.Errorf("hashing oneof field %s: %w", od.FullName(), err)
 		}
-		hashes = append(hashes, fieldHashes...)
+		hashes = append(hashes, hash)
 	}
 
 	return hashes, nil
@@ -113,19 +124,16 @@ func (h *hasher) hashFields(msg protoreflect.Message, fields protoreflect.FieldD
 
 	for i := 0; i < fields.Len(); i++ {
 		fd := fields.Get(i)
-
 		if !msg.Has(fd) {
 			// if we are in this block and the field is a scalar one, it is
 			// either a proto3 field that was never set or is the empty value
 			// (indistinguishable) or this is a proto2 field that is nil.
 			continue
 		}
-
 		hash, err := h.hashField(fd, msg.Get(fd))
 		if err != nil {
 			return nil, err
 		}
-
 		hashes = append(hashes, hash)
 	}
 
