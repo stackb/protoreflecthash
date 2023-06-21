@@ -386,11 +386,17 @@ func TestHashEmpty(t *testing.T) {
 	for _, tc := range []struct {
 		msg proto.Message
 	}{
+		{&pb2_latest.Empty{}},
 		{&pb3_latest.Empty{}},
+
 		// Empty repeated fields are ignored.
+		{&pb2_latest.Repetitive{StringField: []string{}}},
 		{&pb3_latest.Repetitive{StringField: []string{}}},
+
 		// Empty map fields are ignored.
+		{&pb2_latest.StringMaps{StringToString: map[string]string{}}},
 		{&pb3_latest.StringMaps{StringToString: map[string]string{}}},
+
 		// Proto3 scalar fields set to their default values are considered empty.
 		{&pb3_latest.Simple{BoolField: false}},
 		{&pb3_latest.Simple{BytesField: []byte{}}},
