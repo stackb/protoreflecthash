@@ -432,13 +432,7 @@ func TestHashEmpty(t *testing.T) {
 
 func TestHashIntegerFields(t *testing.T) {
 
-	for name, tc := range map[string]struct {
-		fieldNamesAsKeys bool
-		protos           []proto.Message
-		obj              interface{}
-		json             string
-		want             string
-	}{
+	for name, tc := range map[string]hashTestCase{
 		"equivalence": {
 			fieldNamesAsKeys: true,
 			protos: []proto.Message{
@@ -476,44 +470,13 @@ func TestHashIntegerFields(t *testing.T) {
 			want: "6cb613a53b6086b88dbda40b30e902adb41288b0b1f7a627905beaa764ee49cb",
 		},
 	} {
-		t.Run(name, func(t *testing.T) {
-			for _, msg := range tc.protos {
-				t.Run(fmt.Sprintf("%+v", msg), func(t *testing.T) {
-					h := hasher{fieldNamesAsKeys: tc.fieldNamesAsKeys}
-
-					got := getHash(t, func() ([]byte, error) {
-						return h.hashMessage(msg.ProtoReflect())
-					})
-
-					if diff := cmp.Diff(tc.want, got); diff != "" {
-						t.Errorf("protohash (-want +got):\n%s", diff)
-					}
-
-					if tc.json != "" {
-						if diff := cmp.Diff(tc.want, jsonHash(t, tc.json)); diff != "" {
-							t.Errorf("jsonhash (-want +got):\n%s", diff)
-						}
-					}
-					if tc.obj != nil {
-						if diff := cmp.Diff(tc.want, objectHash(t, tc.obj)); diff != "" {
-							t.Errorf("objecthash (-want +got):\n%s", diff)
-						}
-					}
-				})
-			}
-		})
+		tc.Check(name, t)
 	}
 }
 
 func TestHashFloatFields(t *testing.T) {
 
-	for name, tc := range map[string]struct {
-		fieldNamesAsKeys bool
-		protos           []proto.Message
-		obj              interface{}
-		json             string
-		want             string
-	}{
+	for name, tc := range map[string]hashTestCase{
 		"float fields (hashing key field numbers)": {
 			protos: []proto.Message{
 				&pb2_latest.DoubleMessage{Values: []float64{-2, -1, 0, 1, 2}},
@@ -663,44 +626,13 @@ func TestHashFloatFields(t *testing.T) {
 			want: "1a4ffd7e9dc1f915c5b3b821d9194ac7d6d2bdec947aa8c3b3b1e9017c651331",
 		},
 	} {
-		t.Run(name, func(t *testing.T) {
-			for _, msg := range tc.protos {
-				t.Run(fmt.Sprintf("%+v", msg), func(t *testing.T) {
-					h := hasher{fieldNamesAsKeys: tc.fieldNamesAsKeys}
-
-					got := getHash(t, func() ([]byte, error) {
-						return h.hashMessage(msg.ProtoReflect())
-					})
-
-					if diff := cmp.Diff(tc.want, got); diff != "" {
-						t.Errorf("protohash (-want +got):\n%s", diff)
-					}
-
-					if tc.json != "" {
-						if diff := cmp.Diff(tc.want, jsonHash(t, tc.json)); diff != "" {
-							t.Errorf("jsonhash (-want +got):\n%s", diff)
-						}
-					}
-					if tc.obj != nil {
-						if diff := cmp.Diff(tc.want, objectHash(t, tc.obj)); diff != "" {
-							t.Errorf("objecthash (-want +got):\n%s", diff)
-						}
-					}
-				})
-			}
-		})
+		tc.Check(name, t)
 	}
 }
 
 func TestHashMapFields(t *testing.T) {
 
-	for name, tc := range map[string]struct {
-		fieldNamesAsKeys bool
-		protos           []proto.Message
-		obj              interface{}
-		json             string
-		want             string
-	}{
+	for name, tc := range map[string]hashTestCase{
 		"boolean maps": {
 			fieldNamesAsKeys: true,
 			protos: []proto.Message{
@@ -754,32 +686,190 @@ func TestHashMapFields(t *testing.T) {
 			want: "58057927bb1a123452a2d75071b55b08e426490ca42c3dd14e3be59183ac4751",
 		},
 	} {
-		t.Run(name, func(t *testing.T) {
-			for _, msg := range tc.protos {
-				t.Run(fmt.Sprintf("%+v", msg), func(t *testing.T) {
-					h := hasher{fieldNamesAsKeys: tc.fieldNamesAsKeys}
+		tc.Check(name, t)
+	}
+}
 
-					got := getHash(t, func() ([]byte, error) {
-						return h.hashMessage(msg.ProtoReflect())
-					})
+func TestHashRepeatedFields(t *testing.T) {
 
-					if diff := cmp.Diff(tc.want, got); diff != "" {
-						t.Errorf("protohash (-want +got):\n%s", diff)
-					}
-
-					if tc.json != "" {
-						if diff := cmp.Diff(tc.want, jsonHash(t, tc.json)); diff != "" {
-							t.Errorf("jsonhash (-want +got):\n%s", diff)
-						}
-					}
-					if tc.obj != nil {
-						if diff := cmp.Diff(tc.want, objectHash(t, tc.obj)); diff != "" {
-							t.Errorf("objecthash (-want +got):\n%s", diff)
-						}
-					}
-				})
-			}
-		})
+	for name, tc := range map[string]hashTestCase{
+		"empty lists": {
+			fieldNamesAsKeys: true,
+			protos: []proto.Message{
+				&pb2_latest.Repetitive{
+					BoolField:       []bool{},
+					BytesField:      [][]byte{},
+					DoubleField:     []float64{},
+					Fixed32Field:    []uint32{},
+					Fixed64Field:    []uint64{},
+					FloatField:      []float32{},
+					Int32Field:      []int32{},
+					Int64Field:      []int64{},
+					Sfixed32Field:   []int32{},
+					Sfixed64Field:   []int64{},
+					Sint32Field:     []int32{},
+					Sint64Field:     []int64{},
+					StringField:     []string{},
+					Uint32Field:     []uint32{},
+					Uint64Field:     []uint64{},
+					SimpleField:     []*pb2_latest.Simple{},
+					RepetitiveField: []*pb2_latest.Repetitive{},
+					SingletonField:  []*pb2_latest.Singleton{},
+				},
+				&pb3_latest.Repetitive{
+					BoolField:       []bool{},
+					BytesField:      [][]byte{},
+					DoubleField:     []float64{},
+					Fixed32Field:    []uint32{},
+					Fixed64Field:    []uint64{},
+					FloatField:      []float32{},
+					Int32Field:      []int32{},
+					Int64Field:      []int64{},
+					Sfixed32Field:   []int32{},
+					Sfixed64Field:   []int64{},
+					Sint32Field:     []int32{},
+					Sint64Field:     []int64{},
+					StringField:     []string{},
+					Uint32Field:     []uint32{},
+					Uint64Field:     []uint64{},
+					SimpleField:     []*pb3_latest.Simple{},
+					RepetitiveField: []*pb3_latest.Repetitive{},
+					SingletonField:  []*pb3_latest.Singleton{},
+				},
+			},
+			obj:  map[string]interface{}{},
+			json: `{}`,
+			want: "18ac3e7343f016890c510e93f935261169d9e3f565436429830faf0934f4f8e4",
+		},
+		"Lists with strings (empty)": {
+			fieldNamesAsKeys: true,
+			protos: []proto.Message{
+				&pb2_latest.Repetitive{StringField: []string{""}},
+				&pb3_latest.Repetitive{StringField: []string{""}},
+			},
+			obj:  map[string][]string{"string_field": {""}},
+			json: "{\"string_field\": [\"\"]}",
+			want: "63e64f0ed286e0d8f30735e6646ea9ef48174c23ba09a05288b4233c6e6a9419",
+		},
+		"Lists with strings (non-empty)": {
+			fieldNamesAsKeys: true,
+			protos: []proto.Message{
+				&pb2_latest.Repetitive{StringField: []string{"foo"}},
+				&pb3_latest.Repetitive{StringField: []string{"foo"}},
+			},
+			obj:  map[string][]string{"string_field": {"foo"}},
+			json: "{\"string_field\": [\"foo\"]}",
+			want: "54c0b7c6e7c9ff0bb6076a2caeccbc96fad77f49b17b7ec9bc17dfe98a7b343e",
+		},
+		"Lists with strings (non-empty, multiple)": {
+			fieldNamesAsKeys: true,
+			protos: []proto.Message{
+				&pb2_latest.Repetitive{StringField: []string{"foo", "bar"}},
+				&pb3_latest.Repetitive{StringField: []string{"foo", "bar"}},
+			},
+			json: "{\"string_field\": [\"foo\", \"bar\"]}",
+			obj:  map[string][]string{"string_field": {"foo", "bar"}},
+			want: "a971a061d199ddf37a365d617f9cd4530efb15e933e0dbaf6602b2908b792056",
+		},
+		"lists with ints (0)": {
+			fieldNamesAsKeys: true,
+			protos: []proto.Message{
+				&pb2_latest.Repetitive{Int64Field: []int64{0}},
+				&pb3_latest.Repetitive{Int64Field: []int64{0}},
+			},
+			obj:  map[string][]int64{"int64_field": {0}},
+			want: "b7e7afd1c1c7beeec4dcc0ced0ec4af2c850add686a12987e8f0b6fcb603733a",
+		},
+		"lists with ints (span)": {
+			fieldNamesAsKeys: true,
+			protos: []proto.Message{
+				&pb2_latest.Repetitive{Int64Field: []int64{-2, -1, 0, 1, 2}},
+				&pb3_latest.Repetitive{Int64Field: []int64{-2, -1, 0, 1, 2}},
+			},
+			obj:  map[string][]int64{"int64_field": {-2, -1, 0, 1, 2}},
+			want: "44e78ff73bdf5d0da5141e110b22bab240483ba17c40f83553a0e6bbfa671e22",
+		},
+		"lists with ints (large)": {
+			fieldNamesAsKeys: true,
+			protos: []proto.Message{
+				&pb2_latest.Repetitive{Int64Field: []int64{123456789012345, 678901234567890}},
+				&pb3_latest.Repetitive{Int64Field: []int64{123456789012345, 678901234567890}},
+			},
+			obj:  map[string][]int64{"int64_field": {123456789012345, 678901234567890}},
+			want: "b0ce1b7dfa71b33a16571fea7f3f27341bf5980b040e9d949a8019f3143ecbc7",
+		},
+		"lists with floats (0)": {
+			fieldNamesAsKeys: true,
+			protos: []proto.Message{
+				&pb2_latest.Repetitive{FloatField: []float32{0}},
+				&pb3_latest.Repetitive{FloatField: []float32{0}},
+			},
+			json: "{\"float_field\": [0]}",
+			obj:  map[string][]float32{"float_field": {0}},
+			want: "63b09f87ed057a88b38e2a69b6dde327d9e2624384542853327d6b90c83046f9",
+		},
+		"lists with floats (0.0)": {
+			fieldNamesAsKeys: true,
+			protos: []proto.Message{
+				&pb2_latest.Repetitive{FloatField: []float32{0.0}},
+				&pb3_latest.Repetitive{FloatField: []float32{0.0}},
+			},
+			json: "{\"float_field\": [0.0]}",
+			obj:  map[string][]float32{"float_field": {0.0}},
+			want: "63b09f87ed057a88b38e2a69b6dde327d9e2624384542853327d6b90c83046f9",
+		},
+		"lists with floats (span)": {
+			fieldNamesAsKeys: true,
+			protos: []proto.Message{
+				&pb2_latest.Repetitive{FloatField: []float32{-2, -1, 0, 1, 2}},
+				&pb3_latest.Repetitive{FloatField: []float32{-2, -1, 0, 1, 2}},
+			},
+			json: "{\"float_field\": [-2, -1, 0, 1, 2]}",
+			obj:  map[string][]float32{"float_field": {-2, -1, 0, 1, 2}},
+			want: "68b2552f2f33b5dd38c9be0aeee127170c86d8d2b3ab7daebdc2ea124226593f",
+		},
+		"lists with floats (span 2)": {
+			fieldNamesAsKeys: true,
+			protos: []proto.Message{
+				&pb2_latest.Repetitive{FloatField: []float32{1, 2, 3}},
+				&pb3_latest.Repetitive{FloatField: []float32{1, 2, 3}},
+			},
+			json: "{\"float_field\": [1, 2, 3]}",
+			obj:  map[string][]float32{"float_field": {1, 2, 3}},
+			want: "f26c1502d1f9f7bf672cf669290348f9bfdea0af48261f2822aad01927fe1749",
+		},
+		"lists with floats (span with decimals)": {
+			fieldNamesAsKeys: true,
+			protos: []proto.Message{
+				&pb2_latest.Repetitive{DoubleField: []float64{1.2345, -10.1234}},
+				&pb3_latest.Repetitive{DoubleField: []float64{1.2345, -10.1234}},
+			},
+			json: "{\"double_field\": [1.2345, -10.1234]}",
+			obj:  map[string][]float64{"double_field": {1.2345, -10.1234}},
+			want: "2e60f6cdebfeb5e705666e9b0ff0ec652320ae27d77ad89bd4c7ddc632d0b93c",
+		},
+		"lists with floats (span with decimals 2)": {
+			fieldNamesAsKeys: true,
+			protos: []proto.Message{
+				&pb2_latest.Repetitive{DoubleField: []float64{1.0, 1.5, 0.0001, 1000.9999999, 2.0, -23.1234, 2.32542}},
+				&pb3_latest.Repetitive{DoubleField: []float64{1.0, 1.5, 0.0001, 1000.9999999, 2.0, -23.1234, 2.32542}},
+			},
+			json: "{\"double_field\": [1.0, 1.5, 0.0001, 1000.9999999, 2.0, -23.1234, 2.32542]}",
+			obj:  map[string][]float64{"double_field": {1.0, 1.5, 0.0001, 1000.9999999, 2.0, -23.1234, 2.32542}},
+			want: "09a46866ca2c6d406513cd6e25feb6eda7aef4d25259f5ec16bf72f1f8bbcdac",
+		},
+		"lists with floats (span with decimals large)": {
+			fieldNamesAsKeys: true,
+			protos: []proto.Message{
+				&pb2_latest.Repetitive{DoubleField: []float64{123456789012345, 678901234567890}},
+				&pb3_latest.Repetitive{DoubleField: []float64{123456789012345, 678901234567890}},
+			},
+			json: "{\"double_field\": [123456789012345, 678901234567890]}",
+			obj:  map[string][]float64{"double_field": {123456789012345, 678901234567890}},
+			want: "067d25d39b8514b6b905e0eba2d19242bcf4441e2367527dbceac7a9dd0108a0",
+		},
+	} {
+		tc.Check(name, t)
 	}
 }
 
@@ -797,39 +887,6 @@ func TestHashMessage(t *testing.T) {
 				md:              mdByPath(t, files, "test_protos/schema/proto3/integers.proto", "Int32Message"),
 				json:            `{"values": [0, 1, 2]}`,
 				want:            "ec28f92dbcce2dc9e38b48cd7725337ca7df40d729b8523a5b3512f7449e8156",
-				skipEquivalence: true, // No equivalent JSON: JSON does not have an "integer" type. All numbers are floats.
-			},
-		} {
-			t.Run(name, func(t *testing.T) {
-				h := hasher{}
-
-				got := getHash(t, func() ([]byte, error) {
-					return h.hashMessage(unmarshalJson(t, tc.md, tc.json))
-				})
-
-				if diff := cmp.Diff(tc.want, got); diff != "" {
-					t.Errorf("protohash (-want +got):\n%s", diff)
-				}
-				if !tc.skipEquivalence {
-					if diff := cmp.Diff(tc.want, jsonHash(t, tc.json)); diff != "" {
-						t.Errorf("jsonhash (-want +got):\n%s", diff)
-					}
-				}
-			})
-		}
-	})
-
-	t.Run("floats.proto", func(t *testing.T) {
-		for name, tc := range map[string]struct {
-			md              protoreflect.MessageDescriptor
-			json            string
-			want            string
-			skipEquivalence bool
-		}{
-			"FloatMessage": {
-				md:              mdByPath(t, files, "test_protos/schema/proto3/floats.proto", "FloatMessage"),
-				json:            `{"values": [-2, -1, 0, 1, 2]}`,
-				want:            "08775d05cd028265e4956a95aef6c050a45652e9c59462da636a8460c5ed52f3",
 				skipEquivalence: true, // No equivalent JSON: JSON does not have an "integer" type. All numbers are floats.
 			},
 		} {
@@ -1000,4 +1057,39 @@ func (ss stringList) NewElement() protoreflect.Value {
 // be preserved in marshaling or other operations.
 func (ss stringList) IsValid() bool {
 	return true
+}
+
+type hashTestCase struct {
+	fieldNamesAsKeys bool
+	protos           []proto.Message
+	obj              interface{}
+	json             string
+	want             string
+}
+
+func (tc *hashTestCase) Check(name string, t *testing.T) {
+	for _, msg := range tc.protos {
+		t.Run(fmt.Sprintf("%+v", msg), func(t *testing.T) {
+			h := hasher{fieldNamesAsKeys: tc.fieldNamesAsKeys}
+
+			got := getHash(t, func() ([]byte, error) {
+				return h.hashMessage(msg.ProtoReflect())
+			})
+
+			if diff := cmp.Diff(tc.want, got); diff != "" {
+				t.Errorf("protohash (-want +got):\n%s", diff)
+			}
+
+			if tc.json != "" {
+				if diff := cmp.Diff(tc.want, jsonHash(t, tc.json)); diff != "" {
+					t.Errorf("jsonhash (-want +got):\n%s", diff)
+				}
+			}
+			if tc.obj != nil {
+				if diff := cmp.Diff(tc.want, objectHash(t, tc.obj)); diff != "" {
+					t.Errorf("objecthash (-want +got):\n%s", diff)
+				}
+			}
+		})
+	}
 }
