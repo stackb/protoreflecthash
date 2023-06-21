@@ -386,11 +386,17 @@ func TestHashEmpty(t *testing.T) {
 	for _, tc := range []struct {
 		msg proto.Message
 	}{
+		{&pb2_latest.Empty{}},
 		{&pb3_latest.Empty{}},
+
 		// Empty repeated fields are ignored.
+		{&pb2_latest.Repetitive{StringField: []string{}}},
 		{&pb3_latest.Repetitive{StringField: []string{}}},
+
 		// Empty map fields are ignored.
+		{&pb2_latest.StringMaps{StringToString: map[string]string{}}},
 		{&pb3_latest.StringMaps{StringToString: map[string]string{}}},
+
 		// Proto3 scalar fields set to their default values are considered empty.
 		{&pb3_latest.Simple{BoolField: false}},
 		{&pb3_latest.Simple{BytesField: []byte{}}},
@@ -655,6 +661,97 @@ func TestHashFloatFields(t *testing.T) {
 			// See: https://tools.ietf.org/html/rfc4627#section-2.4
 			// json: `{"value": Inf}`,
 			want: "1a4ffd7e9dc1f915c5b3b821d9194ac7d6d2bdec947aa8c3b3b1e9017c651331",
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			for _, msg := range tc.protos {
+				t.Run(fmt.Sprintf("%+v", msg), func(t *testing.T) {
+					h := hasher{fieldNamesAsKeys: tc.fieldNamesAsKeys}
+
+					got := getHash(t, func() ([]byte, error) {
+						return h.hashMessage(msg.ProtoReflect())
+					})
+
+					if diff := cmp.Diff(tc.want, got); diff != "" {
+						t.Errorf("protohash (-want +got):\n%s", diff)
+					}
+
+					if tc.json != "" {
+						if diff := cmp.Diff(tc.want, jsonHash(t, tc.json)); diff != "" {
+							t.Errorf("jsonhash (-want +got):\n%s", diff)
+						}
+					}
+					if tc.obj != nil {
+						if diff := cmp.Diff(tc.want, objectHash(t, tc.obj)); diff != "" {
+							t.Errorf("objecthash (-want +got):\n%s", diff)
+						}
+					}
+				})
+			}
+		})
+	}
+}
+
+func TestHashMapFields(t *testing.T) {
+
+	for name, tc := range map[string]struct {
+		fieldNamesAsKeys bool
+		protos           []proto.Message
+		obj              interface{}
+		json             string
+		want             string
+	}{
+		"boolean maps": {
+			fieldNamesAsKeys: true,
+			protos: []proto.Message{
+				&pb2_latest.BoolMaps{BoolToString: map[bool]string{true: "NOT FALSE", false: "NOT TRUE"}},
+				&pb3_latest.BoolMaps{BoolToString: map[bool]string{true: "NOT FALSE", false: "NOT TRUE"}},
+			},
+			obj: map[string]map[bool]string{"bool_to_string": {true: "NOT FALSE", false: "NOT TRUE"}},
+			// No equivalent JSON: JSON does not have an "integer" type. All numbers are floats.
+			want: "d89d053bf7b37b4784832c72445661db99538fe1d490988575409a9040084f18",
+		},
+		"integer maps": {
+			fieldNamesAsKeys: true,
+			protos: []proto.Message{
+				&pb2_latest.IntMaps{IntToString: map[int64]string{0: "ZERO"}},
+				&pb3_latest.IntMaps{IntToString: map[int64]string{0: "ZERO"}},
+			},
+			obj: map[string]map[int64]string{"int_to_string": {0: "ZERO"}},
+			// No equivalent JSON object because JSON map keys must be strings.
+			want: "53892192fb69cbd93ceb0552ca571b8505887f25d6f12822025341f16983a6af",
+		},
+		"string maps": {
+			fieldNamesAsKeys: true,
+			protos: []proto.Message{
+				&pb2_latest.StringMaps{StringToString: map[string]string{"foo": "bar"}},
+				&pb3_latest.StringMaps{StringToString: map[string]string{"foo": "bar"}},
+			},
+			obj:  map[string]map[string]string{"string_to_string": {"foo": "bar"}},
+			json: `{"string_to_string": {"foo": "bar"}}`,
+			want: "cadfe560995647c63c20234a6409d2b1b8cf8dcf7d8e420ca33f23ff9ca9abfa",
+		},
+		"string maps (unicode)": {
+			fieldNamesAsKeys: true,
+			protos: []proto.Message{
+				&pb2_latest.StringMaps{StringToString: map[string]string{
+					"": "你好", "你好": "\u03d3", "\u03d3": "\u03d2\u0301"}},
+				&pb3_latest.StringMaps{StringToString: map[string]string{
+					"": "你好", "你好": "\u03d3", "\u03d3": "\u03d2\u0301"}},
+			},
+			obj:  map[string]map[string]string{"string_to_string": {"": "你好", "你好": "\u03d3", "\u03d3": "\u03d2\u0301"}},
+			json: `{"string_to_string": {"": "你好", "你好": "\u03d3", "\u03d3": "\u03d2\u0301"}}`,
+			want: "be8b5ae6d5986cde37ab8b395c66045fbb69a8b3b534fa34df7c19a640f4cd66",
+		},
+		"message maps": {
+			fieldNamesAsKeys: true,
+			protos: []proto.Message{
+				&pb2_latest.StringMaps{StringToSimple: map[string]*pb2_latest.Simple{"foo": {}}},
+				&pb3_latest.StringMaps{StringToSimple: map[string]*pb3_latest.Simple{"foo": {}}},
+			},
+			obj:  map[string]map[string]map[string]string{"string_to_simple": {"foo": {}}},
+			json: `{"string_to_simple": {"foo": {}}}`,
+			want: "58057927bb1a123452a2d75071b55b08e426490ca42c3dd14e3be59183ac4751",
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
