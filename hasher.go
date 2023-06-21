@@ -70,16 +70,6 @@ func (h *hasher) hashMessage(msg protoreflect.Message) ([]byte, error) {
 	}
 	hashes = append(hashes, fieldHashes...)
 
-	// keeping this dead code here to remind myself that the hashFields code
-	// already deals with oneofs, we don't need additional separate handling of oneofs.
-	if false {
-		oneofHashes, err := h.hashOneofs(msg, md.Oneofs())
-		if err != nil {
-			return nil, fmt.Errorf("hashing oneofs: %w", err)
-		}
-		hashes = append(hashes, oneofHashes...)
-	}
-
 	sort.Slice(hashes, func(i, j int) bool {
 		return hashes[i].number < hashes[j].number
 	})
@@ -95,28 +85,6 @@ func (h *hasher) hashMessage(msg protoreflect.Message) ([]byte, error) {
 	// 	identifier = hasher.messageIdentifier
 	// }
 	return hash(identifier, buf.Bytes())
-}
-
-func (h *hasher) hashOneofs(msg protoreflect.Message, oneofs protoreflect.OneofDescriptors) ([]*fieldHashEntry, error) {
-	var hashes []*fieldHashEntry
-
-	for i := 0; i < oneofs.Len(); i++ {
-		od := oneofs.Get(i)
-		fd := msg.WhichOneof(od)
-		if fd == nil {
-			continue
-		}
-		if !msg.Has(fd) {
-			continue
-		}
-		hash, err := h.hashField(fd, msg.Get(fd))
-		if err != nil {
-			return nil, fmt.Errorf("hashing oneof field %s: %w", od.FullName(), err)
-		}
-		hashes = append(hashes, hash)
-	}
-
-	return hashes, nil
 }
 
 func (h *hasher) hashFields(msg protoreflect.Message, fields protoreflect.FieldDescriptors) ([]*fieldHashEntry, error) {
