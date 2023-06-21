@@ -431,7 +431,6 @@ func TestHashEmpty(t *testing.T) {
 }
 
 func TestHashIntegerFields(t *testing.T) {
-
 	for name, tc := range map[string]hashTestCase{
 		"equivalence": {
 			fieldNamesAsKeys: true,
@@ -475,7 +474,6 @@ func TestHashIntegerFields(t *testing.T) {
 }
 
 func TestHashFloatFields(t *testing.T) {
-
 	for name, tc := range map[string]hashTestCase{
 		"float fields (hashing key field numbers)": {
 			protos: []proto.Message{
@@ -630,8 +628,66 @@ func TestHashFloatFields(t *testing.T) {
 	}
 }
 
-func TestHashMapFields(t *testing.T) {
+func TestHashStringFields(t *testing.T) {
+	for name, tc := range map[string]hashTestCase{
+		"unicode": {
+			fieldNamesAsKeys: true,
+			protos: []proto.Message{
+				&pb2_latest.Simple{StringField: proto.String("你好")},
+				&pb3_latest.Simple{StringField: "你好"},
+			},
+			obj:  map[string]string{"string_field": "你好"},
+			json: "{\"string_field\":\"你好\"}",
+			want: "de0086ad683b5f8affffbbcbe57d09e5377aa47cb32f6f0b1bdecd2e54b9137d",
+		},
+		"esc": {
+			fieldNamesAsKeys: true,
+			protos: []proto.Message{
+				&pb2_latest.Simple{StringField: proto.String("\u03d3")},
+				&pb3_latest.Simple{StringField: "\u03d3"},
+			},
+			obj:  map[string]string{"string_field": "\u03d3"},
+			json: "{\"string_field\":\"\u03d3\"}",
+			want: "12441188aebffcc3a1e625d825391678d8417c77e645fc992d1ab5b549c659a7",
+		},
+		"normalization": {
+			// Note that this is the same character as above, but hashes differently
+			// unless unicode normalisation is applied.
+			fieldNamesAsKeys: true,
+			protos: []proto.Message{
+				&pb2_latest.Simple{StringField: proto.String("\u03d2\u0301")},
+				&pb3_latest.Simple{StringField: "\u03d2\u0301"},
+			},
+			obj:  map[string]string{"string_field": "\u03d2\u0301"},
+			json: "{\"string_field\":\"\u03d2\u0301\"}",
+			want: "1f33a91552e7a527fdf2de0d25f815590f1a3e2dc8340507d20d4ee42462d0a2",
+		},
+		"repeated empty": {
+			fieldNamesAsKeys: true,
+			protos: []proto.Message{
+				&pb2_latest.Repetitive{StringField: []string{""}},
+				&pb3_latest.Repetitive{StringField: []string{""}},
+			},
+			obj:  map[string][]string{"string_field": {""}},
+			json: "{\"string_field\":[\"\"]}",
+			want: "63e64f0ed286e0d8f30735e6646ea9ef48174c23ba09a05288b4233c6e6a9419",
+		},
+		"repeated unicode": {
+			fieldNamesAsKeys: true,
+			protos: []proto.Message{
+				&pb2_latest.Repetitive{StringField: []string{"", "Test", "你好", "\u03d3"}},
+				&pb3_latest.Repetitive{StringField: []string{"", "Test", "你好", "\u03d3"}},
+			},
+			obj:  map[string][]string{"string_field": {"", "Test", "你好", "\u03d3"}},
+			json: "{\"string_field\":[\"\",\"Test\",\"你好\",\"\u03d3\"]}",
+			want: "f76ae15a2685a5ec0e45f9ad7d75e492e6a17d31811480fbaf00af451fb4e98e",
+		},
+	} {
+		tc.Check(name, t)
+	}
+}
 
+func TestHashMapFields(t *testing.T) {
 	for name, tc := range map[string]hashTestCase{
 		"boolean maps": {
 			fieldNamesAsKeys: true,
