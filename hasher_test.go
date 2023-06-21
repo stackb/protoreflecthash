@@ -433,7 +433,6 @@ func TestHashFloatFields(t *testing.T) {
 		json             string
 		want             string
 	}{
-		"degenerate": {},
 		"float fields (hashing key field numbers)": {
 			protos: []proto.Message{
 				&proto2.DoubleMessage{Values: []float64{-2, -1, 0, 1, 2}},
@@ -494,6 +493,16 @@ func TestHashFloatFields(t *testing.T) {
 			json: `{"value": 1.0000000149011612e-1}`,
 			want: "7081ed6a1e7ad8e7f981a2894a3bd6d3b0b0033b69c03cce84b61dd063f4efaa",
 		},
+		"float fields (There's no float32 number that is equivalent to a float64 '0.1'.)": {
+			fieldNamesAsKeys: true,
+			protos: []proto.Message{
+				&proto2.DoubleMessage{Value: proto.Float64(0.1)},
+				&proto3.DoubleMessage{Value: 0.1},
+			},
+			obj:  map[string]float64{"value": 0.1},
+			json: `{"value": 0.1}`,
+			want: "e175fbe785bae88b598d3ecaad8a64d2a998e9f673173a226868f2ef312a5225",
+		},
 		"float fields (Non-equivalence of Floats using different representations - decimal)": {
 			fieldNamesAsKeys: true,
 			protos: []proto.Message{
@@ -530,7 +539,10 @@ func TestHashFloatFields(t *testing.T) {
 		"float fields (special NaN)": {
 			fieldNamesAsKeys: true,
 			protos: []proto.Message{
+				&proto2.DoubleMessage{Value: proto.Float64(math.NaN())},
 				&proto3.DoubleMessage{Value: math.NaN()},
+
+				&proto2.FloatMessage{Value: proto.Float32(float32(math.NaN()))},
 				&proto3.FloatMessage{Value: float32(math.NaN())},
 			},
 			obj: map[string]float64{"value": math.NaN()},
@@ -542,7 +554,10 @@ func TestHashFloatFields(t *testing.T) {
 		"float fields (special Inf(+))": {
 			fieldNamesAsKeys: true,
 			protos: []proto.Message{
+				&proto2.DoubleMessage{Value: proto.Float64(math.Inf(1))},
 				&proto3.DoubleMessage{Value: math.Inf(1)},
+
+				&proto2.FloatMessage{Value: proto.Float32(float32(math.Inf(1)))},
 				&proto3.FloatMessage{Value: float32(math.Inf(1))},
 			},
 			obj: map[string]float64{"value": math.Inf(1)},
@@ -554,7 +569,10 @@ func TestHashFloatFields(t *testing.T) {
 		"float fields (special Inf(-))": {
 			fieldNamesAsKeys: true,
 			protos: []proto.Message{
+				&proto2.DoubleMessage{Value: proto.Float64(math.Inf(-1))},
 				&proto3.DoubleMessage{Value: math.Inf(-1)},
+
+				&proto2.FloatMessage{Value: proto.Float32(float32(math.Inf(-1)))},
 				&proto3.FloatMessage{Value: float32(math.Inf(-1))},
 			},
 			obj: map[string]float64{"value": math.Inf(-1)},
