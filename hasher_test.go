@@ -749,6 +749,41 @@ func TestHashProto2DefaultFields(t *testing.T) {
 	}
 }
 
+func TestHashOneofFields(t *testing.T) {
+	for name, tc := range map[string]hashTestCase{
+		"empty": {
+			fieldNamesAsKeys: true,
+			protos: []proto.Message{
+				&pb2_latest.Singleton{},
+				&pb3_latest.Singleton{},
+
+				&pb2_latest.Empty{},
+				&pb3_latest.Empty{},
+			},
+			obj:  map[int64]string{},
+			json: `{}`,
+			want: "18ac3e7343f016890c510e93f935261169d9e3f565436429830faf0934f4f8e4",
+		},
+		"one selected but empty": {
+			fieldNamesAsKeys: true,
+			protos: []proto.Message{
+				// Only proto2 has empty values.
+				&pb2_latest.Simple{BoolField: proto.Bool(false)},
+
+				// &pb2_latest.Singleton{Singleton: &pb2_latest.Singleton_TheBool{}},
+				// &pb3_latest.Singleton{Singleton: &pb3_latest.Singleton_TheBool{}},
+
+				// &pb2_latest.Singleton{Singleton: &pb2_latest.Singleton_TheBool{TheBool: false}},
+				// &pb3_latest.Singleton{Singleton: &pb3_latest.Singleton_TheBool{TheBool: false}},
+			},
+			obj:  map[int64]bool{1: false},
+			want: "8a956cfa8e9b45b738cb8dc8a3dc7126dab3cbd2c07c80fa1ec312a1a31ed709",
+		},
+	} {
+		tc.Check(name, t)
+	}
+}
+
 func TestHashMapFields(t *testing.T) {
 	for name, tc := range map[string]hashTestCase{
 		"boolean maps": {
