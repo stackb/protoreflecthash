@@ -434,10 +434,40 @@ func TestHashIntegerFields(t *testing.T) {
 		want             string
 	}{
 		"equivalence": {
-			protos: []proto.Message{},
-			// obj: map[string][]float64{"values": {-2, -1, 0, 1, 2}},
-			// json: `{2: [-2, -1, 0, 1, 2]}`, skipping json as this is invalid json
-			want: "08775d05cd028265e4956a95aef6c050a45652e9c59462da636a8460c5ed52f3",
+			fieldNamesAsKeys: true,
+			protos: []proto.Message{
+				&pb2_latest.Fixed32Message{Values: []uint32{0, 1, 2}},
+				&pb2_latest.Fixed64Message{Values: []uint64{0, 1, 2}},
+				&pb2_latest.Int32Message{Values: []int32{0, 1, 2}},
+				&pb2_latest.Int64Message{Values: []int64{0, 1, 2}},
+				&pb2_latest.Sfixed32Message{Values: []int32{0, 1, 2}},
+				&pb2_latest.Sfixed64Message{Values: []int64{0, 1, 2}},
+				&pb2_latest.Sint32Message{Values: []int32{0, 1, 2}},
+				&pb2_latest.Sint64Message{Values: []int64{0, 1, 2}},
+				&pb2_latest.Uint32Message{Values: []uint32{0, 1, 2}},
+				&pb2_latest.Uint64Message{Values: []uint64{0, 1, 2}},
+
+				&pb3_latest.Fixed32Message{Values: []uint32{0, 1, 2}},
+				&pb3_latest.Fixed64Message{Values: []uint64{0, 1, 2}},
+				&pb3_latest.Int32Message{Values: []int32{0, 1, 2}},
+				&pb3_latest.Int64Message{Values: []int64{0, 1, 2}},
+				&pb3_latest.Sfixed32Message{Values: []int32{0, 1, 2}},
+				&pb3_latest.Sfixed64Message{Values: []int64{0, 1, 2}},
+				&pb3_latest.Sint32Message{Values: []int32{0, 1, 2}},
+				&pb3_latest.Sint64Message{Values: []int64{0, 1, 2}},
+				&pb3_latest.Uint32Message{Values: []uint32{0, 1, 2}},
+				&pb3_latest.Uint64Message{Values: []uint64{0, 1, 2}},
+			},
+			obj: map[string][]int32{"values": {0, 1, 2}},
+			// No equivalent JSON: JSON does not have an "integer" type. All numbers are floats.
+			want: "42794fb0e73c2b5f427aa76486555d07589359054848396ddf173e9e0b4ab931",
+		},
+		"equivalence (with negatives)": {
+			fieldNamesAsKeys: true,
+			protos:           []proto.Message{},
+			obj:              map[string][]int32{"values": {-2, -1, 0, 1, 2}},
+			// No equivalent JSON: JSON does not have an "integer" type. All numbers are floats.
+			want: "6cb613a53b6086b88dbda40b30e902adb41288b0b1f7a627905beaa764ee49cb",
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
