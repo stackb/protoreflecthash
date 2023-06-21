@@ -18,8 +18,8 @@ import (
 	"google.golang.org/protobuf/types/descriptorpb"
 	"google.golang.org/protobuf/types/dynamicpb"
 
-	"github.com/stackb/protoreflecthash/test_protos/generated/latest/proto2"
-	"github.com/stackb/protoreflecthash/test_protos/generated/latest/proto3"
+	pb2_latest "github.com/stackb/protoreflecthash/test_protos/generated/latest/proto2"
+	pb3_latest "github.com/stackb/protoreflecthash/test_protos/generated/latest/proto3"
 )
 
 //go:embed testdata/protoset.pb
@@ -275,35 +275,35 @@ func TestHashMap(t *testing.T) {
 		want         string
 	}{
 		"IntMaps.int_to_string": {
-			value:        &proto3.IntMaps{IntToString: map[int64]string{0: "ZERO"}},
+			value:        &pb3_latest.IntMaps{IntToString: map[int64]string{0: "ZERO"}},
 			mapFieldName: "int_to_string",
 			obj:          map[int64]string{0: "ZERO"},
 			// json:         `{0:"ZERO"}`, // can't use json representation in this case
 			want: "8cda73a524d09ce6fa10b071cacd4c725521b660ee4a546b6ebdbf139370e9b9",
 		},
 		"StringMaps.string_to_bool": {
-			value:        &proto3.StringMaps{StringToBool: map[string]bool{"true": true}},
+			value:        &pb3_latest.StringMaps{StringToBool: map[string]bool{"true": true}},
 			mapFieldName: "string_to_bool",
 			obj:          map[string]bool{"true": true},
 			json:         `{"true":true}`,
 			want:         "d84d7d0593f90628672ccc4fbc89e31c51a847f45f39d98b95ea032c8de25e64",
 		},
 		"StringMaps.string_to_string": {
-			value:        &proto3.StringMaps{StringToString: map[string]string{"foo": "bar"}},
+			value:        &pb3_latest.StringMaps{StringToString: map[string]string{"foo": "bar"}},
 			mapFieldName: "string_to_string",
 			obj:          map[string]string{"foo": "bar"},
 			json:         `{"foo":"bar"}`,
 			want:         "7ef5237c3027d6c58100afadf37796b3d351025cf28038280147d42fdc53b960",
 		},
 		"StringMaps.string_to_string_k123": {
-			value:        &proto3.StringMaps{StringToString: map[string]string{"k1": "v1", "k2": "v2", "k3": "v3"}},
+			value:        &pb3_latest.StringMaps{StringToString: map[string]string{"k1": "v1", "k2": "v2", "k3": "v3"}},
 			mapFieldName: "string_to_string",
 			obj:          map[string]string{"k1": "v1", "k2": "v2", "k3": "v3"},
 			json:         `{"k1":"v1","k2":"v2","k3":"v3"}`,
 			want:         "ddd65f1f7568269a30df7cafc26044537dc2f02a1a0d830da61762fc3e687057",
 		},
 		"StringMaps.string_to_string_k213": {
-			value:        &proto3.StringMaps{StringToString: map[string]string{"k2": "v2", "k1": "v1", "k3": "v3"}},
+			value:        &pb3_latest.StringMaps{StringToString: map[string]string{"k2": "v2", "k1": "v1", "k3": "v3"}},
 			mapFieldName: "string_to_string",
 			obj:          map[string]string{"k2": "v2", "k1": "v1", "k3": "v3"},
 			json:         `{"k1":"v1","k2":"v2","k3":"v3"}`,
@@ -353,7 +353,7 @@ func TestHashEnum(t *testing.T) {
 			want:  "a4e167a76a05add8a8654c169b07b0447a916035aef602df103e8ae0fe2ff390",
 		},
 		"earth": {
-			value: proto3.PlanetV1_EARTH_V1.Number(),
+			value: pb3_latest.PlanetV1_EARTH_V1.Number(),
 			want:  "9a83c6cb1126d93de4a30715b28f1f4b26b983c57fb39e6d826d7e893ae4ee74",
 		},
 	} {
@@ -386,29 +386,29 @@ func TestHashEmpty(t *testing.T) {
 	for _, tc := range []struct {
 		msg proto.Message
 	}{
-		{&proto3.Empty{}},
+		{&pb3_latest.Empty{}},
 		// Empty repeated fields are ignored.
-		{&proto3.Repetitive{StringField: []string{}}},
+		{&pb3_latest.Repetitive{StringField: []string{}}},
 		// Empty map fields are ignored.
-		{&proto3.StringMaps{StringToString: map[string]string{}}},
+		{&pb3_latest.StringMaps{StringToString: map[string]string{}}},
 		// Proto3 scalar fields set to their default values are considered empty.
-		{&proto3.Simple{BoolField: false}},
-		{&proto3.Simple{BytesField: []byte{}}},
-		{&proto3.Simple{DoubleField: 0}},
-		{&proto3.Simple{DoubleField: 0.0}},
-		{&proto3.Simple{Fixed32Field: 0}},
-		{&proto3.Simple{Fixed64Field: 0}},
-		{&proto3.Simple{FloatField: 0}},
-		{&proto3.Simple{FloatField: 0.0}},
-		{&proto3.Simple{Int32Field: 0}},
-		{&proto3.Simple{Int64Field: 0}},
-		{&proto3.Simple{Sfixed32Field: 0}},
-		{&proto3.Simple{Sfixed64Field: 0}},
-		{&proto3.Simple{Sint32Field: 0}},
-		{&proto3.Simple{Sint64Field: 0}},
-		{&proto3.Simple{StringField: ""}},
-		{&proto3.Simple{Uint32Field: 0}},
-		{&proto3.Simple{Uint64Field: 0}},
+		{&pb3_latest.Simple{BoolField: false}},
+		{&pb3_latest.Simple{BytesField: []byte{}}},
+		{&pb3_latest.Simple{DoubleField: 0}},
+		{&pb3_latest.Simple{DoubleField: 0.0}},
+		{&pb3_latest.Simple{Fixed32Field: 0}},
+		{&pb3_latest.Simple{Fixed64Field: 0}},
+		{&pb3_latest.Simple{FloatField: 0}},
+		{&pb3_latest.Simple{FloatField: 0.0}},
+		{&pb3_latest.Simple{Int32Field: 0}},
+		{&pb3_latest.Simple{Int64Field: 0}},
+		{&pb3_latest.Simple{Sfixed32Field: 0}},
+		{&pb3_latest.Simple{Sfixed64Field: 0}},
+		{&pb3_latest.Simple{Sint32Field: 0}},
+		{&pb3_latest.Simple{Sint64Field: 0}},
+		{&pb3_latest.Simple{StringField: ""}},
+		{&pb3_latest.Simple{Uint32Field: 0}},
+		{&pb3_latest.Simple{Uint64Field: 0}},
 	} {
 		t.Run(fmt.Sprintf("%+v", tc.msg), func(t *testing.T) {
 			h := hasher{}
@@ -419,6 +419,81 @@ func TestHashEmpty(t *testing.T) {
 
 			if diff := cmp.Diff(emptyHash, got); diff != "" {
 				t.Errorf("protohash (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestHashIntegerFields(t *testing.T) {
+
+	for name, tc := range map[string]struct {
+		fieldNamesAsKeys bool
+		protos           []proto.Message
+		obj              interface{}
+		json             string
+		want             string
+	}{
+		"equivalence": {
+			fieldNamesAsKeys: true,
+			protos: []proto.Message{
+				&pb2_latest.Fixed32Message{Values: []uint32{0, 1, 2}},
+				&pb2_latest.Fixed64Message{Values: []uint64{0, 1, 2}},
+				&pb2_latest.Int32Message{Values: []int32{0, 1, 2}},
+				&pb2_latest.Int64Message{Values: []int64{0, 1, 2}},
+				&pb2_latest.Sfixed32Message{Values: []int32{0, 1, 2}},
+				&pb2_latest.Sfixed64Message{Values: []int64{0, 1, 2}},
+				&pb2_latest.Sint32Message{Values: []int32{0, 1, 2}},
+				&pb2_latest.Sint64Message{Values: []int64{0, 1, 2}},
+				&pb2_latest.Uint32Message{Values: []uint32{0, 1, 2}},
+				&pb2_latest.Uint64Message{Values: []uint64{0, 1, 2}},
+
+				&pb3_latest.Fixed32Message{Values: []uint32{0, 1, 2}},
+				&pb3_latest.Fixed64Message{Values: []uint64{0, 1, 2}},
+				&pb3_latest.Int32Message{Values: []int32{0, 1, 2}},
+				&pb3_latest.Int64Message{Values: []int64{0, 1, 2}},
+				&pb3_latest.Sfixed32Message{Values: []int32{0, 1, 2}},
+				&pb3_latest.Sfixed64Message{Values: []int64{0, 1, 2}},
+				&pb3_latest.Sint32Message{Values: []int32{0, 1, 2}},
+				&pb3_latest.Sint64Message{Values: []int64{0, 1, 2}},
+				&pb3_latest.Uint32Message{Values: []uint32{0, 1, 2}},
+				&pb3_latest.Uint64Message{Values: []uint64{0, 1, 2}},
+			},
+			obj: map[string][]int32{"values": {0, 1, 2}},
+			// No equivalent JSON: JSON does not have an "integer" type. All numbers are floats.
+			want: "42794fb0e73c2b5f427aa76486555d07589359054848396ddf173e9e0b4ab931",
+		},
+		"equivalence (with negatives)": {
+			fieldNamesAsKeys: true,
+			protos:           []proto.Message{},
+			obj:              map[string][]int32{"values": {-2, -1, 0, 1, 2}},
+			// No equivalent JSON: JSON does not have an "integer" type. All numbers are floats.
+			want: "6cb613a53b6086b88dbda40b30e902adb41288b0b1f7a627905beaa764ee49cb",
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			for _, msg := range tc.protos {
+				t.Run(fmt.Sprintf("%+v", msg), func(t *testing.T) {
+					h := hasher{fieldNamesAsKeys: tc.fieldNamesAsKeys}
+
+					got := getHash(t, func() ([]byte, error) {
+						return h.hashMessage(msg.ProtoReflect())
+					})
+
+					if diff := cmp.Diff(tc.want, got); diff != "" {
+						t.Errorf("protohash (-want +got):\n%s", diff)
+					}
+
+					if tc.json != "" {
+						if diff := cmp.Diff(tc.want, jsonHash(t, tc.json)); diff != "" {
+							t.Errorf("jsonhash (-want +got):\n%s", diff)
+						}
+					}
+					if tc.obj != nil {
+						if diff := cmp.Diff(tc.want, objectHash(t, tc.obj)); diff != "" {
+							t.Errorf("objecthash (-want +got):\n%s", diff)
+						}
+					}
+				})
 			}
 		})
 	}
@@ -435,10 +510,10 @@ func TestHashFloatFields(t *testing.T) {
 	}{
 		"float fields (hashing key field numbers)": {
 			protos: []proto.Message{
-				&proto2.DoubleMessage{Values: []float64{-2, -1, 0, 1, 2}},
-				&proto3.DoubleMessage{Values: []float64{-2, -1, 0, 1, 2}},
-				&proto2.FloatMessage{Values: []float32{-2, -1, 0, 1, 2}},
-				&proto3.FloatMessage{Values: []float32{-2, -1, 0, 1, 2}},
+				&pb2_latest.DoubleMessage{Values: []float64{-2, -1, 0, 1, 2}},
+				&pb3_latest.DoubleMessage{Values: []float64{-2, -1, 0, 1, 2}},
+				&pb2_latest.FloatMessage{Values: []float32{-2, -1, 0, 1, 2}},
+				&pb3_latest.FloatMessage{Values: []float32{-2, -1, 0, 1, 2}},
 			},
 			// obj: map[string][]float64{"values": {-2, -1, 0, 1, 2}},
 			// json: `{2: [-2, -1, 0, 1, 2]}`, skipping json as this is invalid json
@@ -447,10 +522,10 @@ func TestHashFloatFields(t *testing.T) {
 		"float fields (hashing key field strings)": {
 			fieldNamesAsKeys: true,
 			protos: []proto.Message{
-				&proto2.DoubleMessage{Values: []float64{-2, -1, 0, 1, 2}},
-				&proto3.DoubleMessage{Values: []float64{-2, -1, 0, 1, 2}},
-				&proto2.FloatMessage{Values: []float32{-2, -1, 0, 1, 2}},
-				&proto3.FloatMessage{Values: []float32{-2, -1, 0, 1, 2}},
+				&pb2_latest.DoubleMessage{Values: []float64{-2, -1, 0, 1, 2}},
+				&pb3_latest.DoubleMessage{Values: []float64{-2, -1, 0, 1, 2}},
+				&pb2_latest.FloatMessage{Values: []float32{-2, -1, 0, 1, 2}},
+				&pb3_latest.FloatMessage{Values: []float32{-2, -1, 0, 1, 2}},
 			},
 			obj:  map[string][]float64{"values": {-2, -1, 0, 1, 2}},
 			json: `{"values": [-2, -1, 0, 1, 2]}`,
@@ -459,10 +534,10 @@ func TestHashFloatFields(t *testing.T) {
 		"float fields (fractions 32)": {
 			fieldNamesAsKeys: true,
 			protos: []proto.Message{
-				&proto2.DoubleMessage{Values: []float64{0.0078125, 7.888609052210118e-31}},
-				&proto3.DoubleMessage{Values: []float64{0.0078125, 7.888609052210118e-31}},
-				&proto2.FloatMessage{Values: []float32{0.0078125, 7.888609052210118e-31}},
-				&proto3.FloatMessage{Values: []float32{0.0078125, 7.888609052210118e-31}},
+				&pb2_latest.DoubleMessage{Values: []float64{0.0078125, 7.888609052210118e-31}},
+				&pb3_latest.DoubleMessage{Values: []float64{0.0078125, 7.888609052210118e-31}},
+				&pb2_latest.FloatMessage{Values: []float32{0.0078125, 7.888609052210118e-31}},
+				&pb3_latest.FloatMessage{Values: []float32{0.0078125, 7.888609052210118e-31}},
 			},
 			obj:  map[string][]float64{"values": {0.0078125, 7.888609052210118e-31}},
 			json: `{"values": [0.0078125, 7.888609052210118e-31]}`,
@@ -471,10 +546,10 @@ func TestHashFloatFields(t *testing.T) {
 		"float fields (fractions 64)": {
 			fieldNamesAsKeys: true,
 			protos: []proto.Message{
-				&proto2.DoubleMessage{Values: []float64{-1.0, 1.5, 1000.000244140625, 1267650600228229401496703205376, 32.0, 13.0009765625}},
-				&proto3.DoubleMessage{Values: []float64{-1.0, 1.5, 1000.000244140625, 1267650600228229401496703205376, 32.0, 13.0009765625}},
-				&proto2.FloatMessage{Values: []float32{-1.0, 1.5, 1000.000244140625, 1267650600228229401496703205376, 32.0, 13.0009765625}},
-				&proto3.FloatMessage{Values: []float32{-1.0, 1.5, 1000.000244140625, 1267650600228229401496703205376, 32.0, 13.0009765625}},
+				&pb2_latest.DoubleMessage{Values: []float64{-1.0, 1.5, 1000.000244140625, 1267650600228229401496703205376, 32.0, 13.0009765625}},
+				&pb3_latest.DoubleMessage{Values: []float64{-1.0, 1.5, 1000.000244140625, 1267650600228229401496703205376, 32.0, 13.0009765625}},
+				&pb2_latest.FloatMessage{Values: []float32{-1.0, 1.5, 1000.000244140625, 1267650600228229401496703205376, 32.0, 13.0009765625}},
+				&pb3_latest.FloatMessage{Values: []float32{-1.0, 1.5, 1000.000244140625, 1267650600228229401496703205376, 32.0, 13.0009765625}},
 			},
 			json: `{"values": [-1.0, 1.5, 1000.000244140625, 1267650600228229401496703205376, 32.0, 13.0009765625]}`,
 			want: "ac261ff3d8b933998e3fea278539eb40b15811dd835d224e0150dce4794168b7",
@@ -482,12 +557,12 @@ func TestHashFloatFields(t *testing.T) {
 		"float fields (Non-equivalence of Floats using different representations)": {
 			fieldNamesAsKeys: true,
 			protos: []proto.Message{
-				&proto2.FloatMessage{Value: proto.Float32(0.1)},
-				&proto3.FloatMessage{Value: 0.1},
+				&pb2_latest.FloatMessage{Value: proto.Float32(0.1)},
+				&pb3_latest.FloatMessage{Value: 0.1},
 				// A float64 "0.1" is not equal to a float32 "0.1".
 				// However, float32 "0.1" is equal to float64 "1.0000000149011612e-1".
-				&proto2.DoubleMessage{Value: proto.Float64(1.0000000149011612e-1)},
-				&proto3.DoubleMessage{Value: 1.0000000149011612e-1},
+				&pb2_latest.DoubleMessage{Value: proto.Float64(1.0000000149011612e-1)},
+				&pb3_latest.DoubleMessage{Value: 1.0000000149011612e-1},
 			},
 			obj:  map[string]float32{"value": 0.1},
 			json: `{"value": 1.0000000149011612e-1}`,
@@ -496,8 +571,8 @@ func TestHashFloatFields(t *testing.T) {
 		"float fields (There's no float32 number that is equivalent to a float64 '0.1'.)": {
 			fieldNamesAsKeys: true,
 			protos: []proto.Message{
-				&proto2.DoubleMessage{Value: proto.Float64(0.1)},
-				&proto3.DoubleMessage{Value: 0.1},
+				&pb2_latest.DoubleMessage{Value: proto.Float64(0.1)},
+				&pb3_latest.DoubleMessage{Value: 0.1},
 			},
 			obj:  map[string]float64{"value": 0.1},
 			json: `{"value": 0.1}`,
@@ -506,11 +581,11 @@ func TestHashFloatFields(t *testing.T) {
 		"float fields (Non-equivalence of Floats using different representations - decimal)": {
 			fieldNamesAsKeys: true,
 			protos: []proto.Message{
-				&proto2.FloatMessage{Value: proto.Float32(1.2163543e+25)},
-				&proto3.FloatMessage{Value: 1.2163543e+25},
+				&pb2_latest.FloatMessage{Value: proto.Float32(1.2163543e+25)},
+				&pb3_latest.FloatMessage{Value: 1.2163543e+25},
 				// The decimal representation of the equivalent 64-bit float is different.
-				&proto2.DoubleMessage{Value: proto.Float64(1.2163543234531120e+25)},
-				&proto3.DoubleMessage{Value: 1.2163543234531120e+25},
+				&pb2_latest.DoubleMessage{Value: proto.Float64(1.2163543234531120e+25)},
+				&pb3_latest.DoubleMessage{Value: 1.2163543234531120e+25},
 			},
 			obj:  map[string]float32{"value": 1.2163543e+25},
 			json: `{"value": 1.2163543234531120e+25}`,
@@ -519,8 +594,8 @@ func TestHashFloatFields(t *testing.T) {
 		"float fields (no float32 number that is equivalent to a float64 '1e+25')": {
 			fieldNamesAsKeys: true,
 			protos: []proto.Message{
-				&proto2.DoubleMessage{Value: proto.Float64(1e+25)},
-				&proto3.DoubleMessage{Value: 1e+25},
+				&pb2_latest.DoubleMessage{Value: proto.Float64(1e+25)},
+				&pb3_latest.DoubleMessage{Value: 1e+25},
 			},
 			obj:  map[string]float64{"value": 1e+25},
 			json: `{"value": 1e+25}`,
@@ -529,8 +604,8 @@ func TestHashFloatFields(t *testing.T) {
 		"float fields (proto2 unset)": {
 			fieldNamesAsKeys: true,
 			protos: []proto.Message{
-				&proto2.DoubleMessage{Value: proto.Float64(0)},
-				&proto2.FloatMessage{Value: proto.Float32(0)},
+				&pb2_latest.DoubleMessage{Value: proto.Float64(0)},
+				&pb2_latest.FloatMessage{Value: proto.Float32(0)},
 			},
 			obj:  map[string]float64{"value": 0},
 			json: `{"value":0}`,
@@ -539,11 +614,11 @@ func TestHashFloatFields(t *testing.T) {
 		"float fields (special NaN)": {
 			fieldNamesAsKeys: true,
 			protos: []proto.Message{
-				&proto2.DoubleMessage{Value: proto.Float64(math.NaN())},
-				&proto3.DoubleMessage{Value: math.NaN()},
+				&pb2_latest.DoubleMessage{Value: proto.Float64(math.NaN())},
+				&pb3_latest.DoubleMessage{Value: math.NaN()},
 
-				&proto2.FloatMessage{Value: proto.Float32(float32(math.NaN()))},
-				&proto3.FloatMessage{Value: float32(math.NaN())},
+				&pb2_latest.FloatMessage{Value: proto.Float32(float32(math.NaN()))},
+				&pb3_latest.FloatMessage{Value: float32(math.NaN())},
 			},
 			obj: map[string]float64{"value": math.NaN()},
 			// No equivalent JSON: JSON does not support special float values.
@@ -554,11 +629,11 @@ func TestHashFloatFields(t *testing.T) {
 		"float fields (special Inf(+))": {
 			fieldNamesAsKeys: true,
 			protos: []proto.Message{
-				&proto2.DoubleMessage{Value: proto.Float64(math.Inf(1))},
-				&proto3.DoubleMessage{Value: math.Inf(1)},
+				&pb2_latest.DoubleMessage{Value: proto.Float64(math.Inf(1))},
+				&pb3_latest.DoubleMessage{Value: math.Inf(1)},
 
-				&proto2.FloatMessage{Value: proto.Float32(float32(math.Inf(1)))},
-				&proto3.FloatMessage{Value: float32(math.Inf(1))},
+				&pb2_latest.FloatMessage{Value: proto.Float32(float32(math.Inf(1)))},
+				&pb3_latest.FloatMessage{Value: float32(math.Inf(1))},
 			},
 			obj: map[string]float64{"value": math.Inf(1)},
 			// No equivalent JSON: JSON does not support special float values.
@@ -569,11 +644,11 @@ func TestHashFloatFields(t *testing.T) {
 		"float fields (special Inf(-))": {
 			fieldNamesAsKeys: true,
 			protos: []proto.Message{
-				&proto2.DoubleMessage{Value: proto.Float64(math.Inf(-1))},
-				&proto3.DoubleMessage{Value: math.Inf(-1)},
+				&pb2_latest.DoubleMessage{Value: proto.Float64(math.Inf(-1))},
+				&pb3_latest.DoubleMessage{Value: math.Inf(-1)},
 
-				&proto2.FloatMessage{Value: proto.Float32(float32(math.Inf(-1)))},
-				&proto3.FloatMessage{Value: float32(math.Inf(-1))},
+				&pb2_latest.FloatMessage{Value: proto.Float32(float32(math.Inf(-1)))},
+				&pb3_latest.FloatMessage{Value: float32(math.Inf(-1))},
 			},
 			obj: map[string]float64{"value": math.Inf(-1)},
 			// No equivalent JSON: JSON does not support special float values.
