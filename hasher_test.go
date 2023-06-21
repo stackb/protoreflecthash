@@ -935,6 +935,52 @@ func TestHashMapFields(t *testing.T) {
 	}
 }
 
+// TestHashOtherTypes performs tests on types that do not have their own test file.
+func TestHashOtherTypes(t *testing.T) {
+	for name, tc := range map[string]hashTestCase{
+		"nil": {
+			protos: []proto.Message{
+				nil,
+			},
+			json: "null",
+			obj:  nil,
+			want: "1b16b1df538ba12dc3f97edbb85caa7050d46c148134290feba80f8236c83db9",
+		},
+		"booleans (true)": {
+			fieldNamesAsKeys: true,
+			protos: []proto.Message{
+				&pb2_latest.Simple{BoolField: proto.Bool(true)},
+				&pb3_latest.Simple{BoolField: true},
+			},
+			json: `{"bool_field": true}`,
+			obj:  map[string]bool{"bool_field": true},
+			want: "7b2ac6048e6c8797205505ea486539a5589583be43154da88785a5121e2d6899",
+		},
+		"booleans (false)": {
+			fieldNamesAsKeys: true,
+			protos: []proto.Message{
+				&pb2_latest.Simple{BoolField: proto.Bool(false)},
+				// proto3 scalar fields set to their default value are considered empty.
+			},
+			json: `{"bool_field": false}`,
+			obj:  map[string]bool{"bool_field": false},
+			want: "1ab5ecdbe4176473024f7efd080593b740d22d076d06ea6edd8762992b484a12",
+		},
+		"bytes": {
+			fieldNamesAsKeys: true,
+			protos: []proto.Message{
+				&pb2_latest.Simple{BytesField: []byte{0, 0, 0}},
+				&pb3_latest.Simple{BytesField: []byte{0, 0, 0}},
+			},
+			// No equivalent JSON: JSON does not have a "bytes" type.
+			obj:  map[string][]byte{"bytes_field": []byte("\000\000\000")},
+			want: "fdd59e1f3120117943124cb9c39da79ac47ea631343ff9154dffb0e64550789c",
+		},
+	} {
+		tc.Check(name, t)
+	}
+}
+
 func TestHashRepeatedFields(t *testing.T) {
 
 	for name, tc := range map[string]hashTestCase{
@@ -1118,7 +1164,7 @@ func TestHashRepeatedFields(t *testing.T) {
 	}
 }
 
-func TestHashMessage(t *testing.T) {
+func TestHashProtoReflectMessage(t *testing.T) {
 	files := unmarshalProtoRegistryFiles(t, testProtoset)
 
 	t.Run("integers.proto", func(t *testing.T) {
@@ -1318,7 +1364,11 @@ func (tc *hashTestCase) Check(name string, t *testing.T) {
 			h := hasher{fieldNamesAsKeys: tc.fieldNamesAsKeys}
 
 			got := getHash(t, func() ([]byte, error) {
-				return h.hashMessage(msg.ProtoReflect())
+				var prm protoreflect.Message
+				if msg != nil {
+					prm = msg.ProtoReflect()
+				}
+				return h.hashMessage(prm)
 			})
 
 			if diff := cmp.Diff(tc.want, got); diff != "" {

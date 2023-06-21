@@ -55,6 +55,10 @@ func (h *hasher) HashProto(msg protoreflect.Message) ([]byte, error) {
 }
 
 func (h *hasher) hashMessage(msg protoreflect.Message) ([]byte, error) {
+	if msg == nil {
+		return hashNil()
+	}
+
 	md := msg.Descriptor()
 
 	// TOOD(pcj): what is the correct handling of placeholder types?
