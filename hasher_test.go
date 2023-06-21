@@ -18,6 +18,7 @@ import (
 	"google.golang.org/protobuf/types/descriptorpb"
 	"google.golang.org/protobuf/types/dynamicpb"
 
+	"github.com/stackb/protoreflecthash/test_protos/generated/latest/proto2"
 	"github.com/stackb/protoreflecthash/test_protos/generated/latest/proto3"
 )
 
@@ -435,7 +436,9 @@ func TestHashFloatFields(t *testing.T) {
 		"degenerate": {},
 		"float fields (hashing key field numbers)": {
 			protos: []proto.Message{
+				&proto2.DoubleMessage{Values: []float64{-2, -1, 0, 1, 2}},
 				&proto3.DoubleMessage{Values: []float64{-2, -1, 0, 1, 2}},
+				&proto2.FloatMessage{Values: []float32{-2, -1, 0, 1, 2}},
 				&proto3.FloatMessage{Values: []float32{-2, -1, 0, 1, 2}},
 			},
 			// obj: map[string][]float64{"values": {-2, -1, 0, 1, 2}},
@@ -445,7 +448,9 @@ func TestHashFloatFields(t *testing.T) {
 		"float fields (hashing key field strings)": {
 			fieldNamesAsKeys: true,
 			protos: []proto.Message{
+				&proto2.DoubleMessage{Values: []float64{-2, -1, 0, 1, 2}},
 				&proto3.DoubleMessage{Values: []float64{-2, -1, 0, 1, 2}},
+				&proto2.FloatMessage{Values: []float32{-2, -1, 0, 1, 2}},
 				&proto3.FloatMessage{Values: []float32{-2, -1, 0, 1, 2}},
 			},
 			obj:  map[string][]float64{"values": {-2, -1, 0, 1, 2}},
@@ -455,7 +460,9 @@ func TestHashFloatFields(t *testing.T) {
 		"float fields (fractions 32)": {
 			fieldNamesAsKeys: true,
 			protos: []proto.Message{
+				&proto2.DoubleMessage{Values: []float64{0.0078125, 7.888609052210118e-31}},
 				&proto3.DoubleMessage{Values: []float64{0.0078125, 7.888609052210118e-31}},
+				&proto2.FloatMessage{Values: []float32{0.0078125, 7.888609052210118e-31}},
 				&proto3.FloatMessage{Values: []float32{0.0078125, 7.888609052210118e-31}},
 			},
 			obj:  map[string][]float64{"values": {0.0078125, 7.888609052210118e-31}},
@@ -465,7 +472,9 @@ func TestHashFloatFields(t *testing.T) {
 		"float fields (fractions 64)": {
 			fieldNamesAsKeys: true,
 			protos: []proto.Message{
+				&proto2.DoubleMessage{Values: []float64{-1.0, 1.5, 1000.000244140625, 1267650600228229401496703205376, 32.0, 13.0009765625}},
 				&proto3.DoubleMessage{Values: []float64{-1.0, 1.5, 1000.000244140625, 1267650600228229401496703205376, 32.0, 13.0009765625}},
+				&proto2.FloatMessage{Values: []float32{-1.0, 1.5, 1000.000244140625, 1267650600228229401496703205376, 32.0, 13.0009765625}},
 				&proto3.FloatMessage{Values: []float32{-1.0, 1.5, 1000.000244140625, 1267650600228229401496703205376, 32.0, 13.0009765625}},
 			},
 			json: `{"values": [-1.0, 1.5, 1000.000244140625, 1267650600228229401496703205376, 32.0, 13.0009765625]}`,
@@ -474,9 +483,11 @@ func TestHashFloatFields(t *testing.T) {
 		"float fields (Non-equivalence of Floats using different representations)": {
 			fieldNamesAsKeys: true,
 			protos: []proto.Message{
+				&proto2.FloatMessage{Value: proto.Float32(0.1)},
 				&proto3.FloatMessage{Value: 0.1},
 				// A float64 "0.1" is not equal to a float32 "0.1".
 				// However, float32 "0.1" is equal to float64 "1.0000000149011612e-1".
+				&proto2.DoubleMessage{Value: proto.Float64(1.0000000149011612e-1)},
 				&proto3.DoubleMessage{Value: 1.0000000149011612e-1},
 			},
 			obj:  map[string]float32{"value": 0.1},
@@ -486,8 +497,10 @@ func TestHashFloatFields(t *testing.T) {
 		"float fields (Non-equivalence of Floats using different representations - decimal)": {
 			fieldNamesAsKeys: true,
 			protos: []proto.Message{
+				&proto2.FloatMessage{Value: proto.Float32(1.2163543e+25)},
 				&proto3.FloatMessage{Value: 1.2163543e+25},
 				// The decimal representation of the equivalent 64-bit float is different.
+				&proto2.DoubleMessage{Value: proto.Float64(1.2163543234531120e+25)},
 				&proto3.DoubleMessage{Value: 1.2163543234531120e+25},
 			},
 			obj:  map[string]float32{"value": 1.2163543e+25},
@@ -497,11 +510,22 @@ func TestHashFloatFields(t *testing.T) {
 		"float fields (no float32 number that is equivalent to a float64 '1e+25')": {
 			fieldNamesAsKeys: true,
 			protos: []proto.Message{
+				&proto2.DoubleMessage{Value: proto.Float64(1e+25)},
 				&proto3.DoubleMessage{Value: 1e+25},
 			},
 			obj:  map[string]float64{"value": 1e+25},
 			json: `{"value": 1e+25}`,
 			want: "874beabbede24974a9f3f74e3448670e0c42c0aaba082f18b963b72253649362",
+		},
+		"float fields (proto2 unset)": {
+			fieldNamesAsKeys: true,
+			protos: []proto.Message{
+				&proto2.DoubleMessage{Value: proto.Float64(0)},
+				&proto2.FloatMessage{Value: proto.Float32(0)},
+			},
+			obj:  map[string]float64{"value": 0},
+			json: `{"value":0}`,
+			want: "94136b0850db069dfd7bee090fc7ede48aa7da53ae3cc8514140a493818c3b91",
 		},
 		"float fields (special NaN)": {
 			fieldNamesAsKeys: true,

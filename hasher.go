@@ -128,13 +128,17 @@ func (h *hasher) hashFields(msg protoreflect.Message, fields protoreflect.FieldD
 	for i := 0; i < fields.Len(); i++ {
 		fd := fields.Get(i)
 		if !msg.Has(fd) {
+			// if we are in this block and the field is a scalar one, it is
+			// either a proto3 field that was never set or is the empty value
+			// (indistinguishable) or this is a proto2 field that is nil.
 			continue
 		}
 		value := msg.Get(fd)
-		defaultValue := fd.Default()
-		if value.Equal(defaultValue) {
-			continue
-		}
+
+		// defaultValue := fd.Default()
+		// if value.Equal(defaultValue) {
+		// 	continue
+		// }
 
 		var khash []byte
 		var err error
