@@ -687,6 +687,68 @@ func TestHashStringFields(t *testing.T) {
 	}
 }
 
+// TestHashProto2DefaultFields checks that proto2 default field values are properly hashed.
+func TestHashProto2DefaultFields(t *testing.T) {
+	for name, tc := range map[string]hashTestCase{
+		"simple bool": {
+			fieldNamesAsKeys: true,
+			protos: []proto.Message{
+				&pb2_latest.Simple{BoolField: proto.Bool(false)},
+			},
+			obj:  map[string]bool{"bool_field": false},
+			json: "{\"bool_field\":false}",
+			want: "1ab5ecdbe4176473024f7efd080593b740d22d076d06ea6edd8762992b484a12",
+		},
+		"simple bytes": {
+			fieldNamesAsKeys: true,
+			protos: []proto.Message{
+				&pb2_latest.Simple{BytesField: []byte{}},
+			},
+			obj: map[string][]byte{"bytes_field": {}},
+			// json: skipped - JSON does not have 'bytes' representation
+			want: "10a0dbbfa097b731c7a505246ffa96a82f997b8c25892d76d3b8b1355e529e05",
+		},
+		"simple string": {
+			fieldNamesAsKeys: true,
+			protos: []proto.Message{
+				&pb2_latest.Simple{StringField: proto.String("")},
+			},
+			obj:  map[string]string{"string_field": ""},
+			json: "{\"string_field\":\"\"}",
+			want: "2d60c2941830ef4bb14424e47c6cd010f2b95e5e34291f429998288a60ac8c22",
+		},
+		"ints": {
+			fieldNamesAsKeys: true,
+			protos: []proto.Message{
+				&pb2_latest.Fixed32Message{Value: proto.Uint32(0)},
+				&pb2_latest.Fixed64Message{Value: proto.Uint64(0)},
+				&pb2_latest.Int32Message{Value: proto.Int32(0)},
+				&pb2_latest.Int64Message{Value: proto.Int64(0)},
+				&pb2_latest.Sfixed32Message{Value: proto.Int32(0)},
+				&pb2_latest.Sfixed64Message{Value: proto.Int64(0)},
+				&pb2_latest.Sint32Message{Value: proto.Int32(0)},
+				&pb2_latest.Sint64Message{Value: proto.Int64(0)},
+				&pb2_latest.Uint32Message{Value: proto.Uint32(0)},
+				&pb2_latest.Uint64Message{Value: proto.Uint64(0)},
+			},
+			obj:  map[string]int64{"value": 0},
+			want: "49f031b73dad26859ffeea8a2bb170aaf7358d2277b00c7fc7ea8edcd37e53a1",
+		},
+		"floats": {
+			fieldNamesAsKeys: true,
+			protos: []proto.Message{
+				&pb2_latest.DoubleMessage{Value: proto.Float64(0.0)},
+				&pb2_latest.FloatMessage{Value: proto.Float32(0.0)},
+			},
+			obj:  map[string]float64{"value": 0.0},
+			json: "{\"value\":0.0}",
+			want: "94136b0850db069dfd7bee090fc7ede48aa7da53ae3cc8514140a493818c3b91",
+		},
+	} {
+		tc.Check(name, t)
+	}
+}
+
 func TestHashMapFields(t *testing.T) {
 	for name, tc := range map[string]hashTestCase{
 		"boolean maps": {
