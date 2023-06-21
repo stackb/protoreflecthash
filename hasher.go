@@ -62,7 +62,7 @@ func (h *hasher) hashMessage(msg protoreflect.Message) ([]byte, error) {
 		return nil, nil
 	}
 
-	var hashes []fieldHashEntry
+	var hashes []*fieldHashEntry
 
 	fieldHashes, err := h.hashFields(msg, md.Fields())
 	if err != nil {
@@ -80,12 +80,6 @@ func (h *hasher) hashMessage(msg protoreflect.Message) ([]byte, error) {
 		buf.Write(hash.vhash)
 	}
 
-	// ohash, err := h.hashOneofs(msg, md.Oneofs())
-	// if err != nil {
-	// 	return nil, fmt.Errorf("hashing fields: %w", err)
-	// }
-	// buf.Write(ohash)
-
 	identifier := mapIdentifier
 	// if hasher.messageIdentifier != "" {
 	// 	identifier = hasher.messageIdentifier
@@ -93,76 +87,53 @@ func (h *hasher) hashMessage(msg protoreflect.Message) ([]byte, error) {
 	return hash(identifier, buf.Bytes())
 }
 
-func (h *hasher) hashOneofs(msg protoreflect.Message, oneofs protoreflect.OneofDescriptors) ([]byte, error) {
-	type oneOfHash struct {
-		number int
-		data   []byte
-	}
+func (h *hasher) hashFields(msg protoreflect.Message, fields protoreflect.FieldDescriptors) ([]*fieldHashEntry, error) {
+	hashes := make([]*fieldHashEntry, 0, fields.Len())
 
-	hashes := make([]oneOfHash, oneofs.Len())
-	// for i := 0; i < oneofs.Len(); i++ {
-	// 	od := oneofs.Get(i)
-	// 	fields := od.Fields()
-	// 	data, err := h.hashFields(msg, fields)
-	// 	if err != nil {
-	// 		return nil, fmt.Errorf("hashing field %d (%s): %w", i, od.FullName(), err)
-	// 	}
-	// 	hashes[i] = oneOfHash{number: i, v: data}
-	// }
-
-	var buf bytes.Buffer
-	for _, hash := range hashes {
-		buf.Write(hash.data)
-	}
-
-	return buf.Bytes(), nil
-}
-
-func (h *hasher) hashFields(msg protoreflect.Message, fields protoreflect.FieldDescriptors) ([]fieldHashEntry, error) {
-	// type fieldHash struct {
-	// 	number int
-	// 	data   []byte
-	// }
-
-	hashes := make([]fieldHashEntry, 0, fields.Len())
 	for i := 0; i < fields.Len(); i++ {
 		fd := fields.Get(i)
-
 		if !msg.Has(fd) {
 			// if we are in this block and the field is a scalar one, it is
 			// either a proto3 field that was never set or is the empty value
 			// (indistinguishable) or this is a proto2 field that is nil.
 			continue
 		}
-		value := msg.Get(fd)
-
-		var khash []byte
-		var err error
-		if h.fieldNamesAsKeys {
-			khash, err = hashUnicode(string(fd.Name()))
-		} else {
-			khash, err = hashInt64(int64(fd.Number()))
-		}
+		hash, err := h.hashField(fd, msg.Get(fd))
 		if err != nil {
-			return nil, fmt.Errorf("hashing key field %d (%s = %d): %w", i, fd.FullName(), fd.Number(), err)
+			return nil, err
 		}
-
-		vhash, err := h.hashField(fd, value)
-		if err != nil {
-			return nil, fmt.Errorf("hashing field %d (%s = %d): %w", i, fd.FullName(), fd.Number(), err)
-		}
-
-		hashes = append(hashes, fieldHashEntry{
-			number: int32(fd.Number()),
-			khash:  khash,
-			vhash:  vhash,
-		})
+		hashes = append(hashes, hash)
 	}
 
 	return hashes, nil
 }
 
-func (h *hasher) hashField(fd protoreflect.FieldDescriptor, value protoreflect.Value) ([]byte, error) {
+func (h *hasher) hashField(fd protoreflect.FieldDescriptor, value protoreflect.Value) (*fieldHashEntry, error) {
+	khash, err := h.hashFieldKey(fd)
+	if err != nil {
+		return nil, fmt.Errorf("hashing field key %d (%s): %w", fd.Number(), fd.FullName(), err)
+	}
+
+	vhash, err := h.hashFieldValue(fd, value)
+	if err != nil {
+		return nil, fmt.Errorf("hashing field value %d (%s): %w", fd.Number(), fd.FullName(), err)
+	}
+
+	return &fieldHashEntry{
+		number: int32(fd.Number()),
+		khash:  khash,
+		vhash:  vhash,
+	}, nil
+}
+
+func (h *hasher) hashFieldKey(fd protoreflect.FieldDescriptor) ([]byte, error) {
+	if h.fieldNamesAsKeys {
+		return hashUnicode(string(fd.Name()))
+	}
+	return hashInt64(int64(fd.Number()))
+}
+
+func (h *hasher) hashFieldValue(fd protoreflect.FieldDescriptor, value protoreflect.Value) ([]byte, error) {
 	if fd.IsList() {
 		return h.hashList(fd.Kind(), value.List())
 	}
@@ -174,32 +145,41 @@ func (h *hasher) hashField(fd protoreflect.FieldDescriptor, value protoreflect.V
 
 func (h *hasher) hashValue(kind protoreflect.Kind, value protoreflect.Value) ([]byte, error) {
 	switch kind {
-	case protoreflect.BoolKind:
+	case
+		protoreflect.BoolKind:
 		return h.hashBool(value.Bool())
-	case protoreflect.EnumKind:
+	case
+		protoreflect.EnumKind:
 		return h.hashEnum(value.Enum())
-	case protoreflect.Uint32Kind,
+	case
+		protoreflect.Uint32Kind,
 		protoreflect.Uint64Kind,
 		protoreflect.Fixed32Kind,
 		protoreflect.Fixed64Kind:
 		return h.hashUint(value.Uint())
-	case protoreflect.Int32Kind,
+	case
+		protoreflect.Int32Kind,
 		protoreflect.Int64Kind,
 		protoreflect.Sint32Kind,
 		protoreflect.Sint64Kind,
 		protoreflect.Sfixed32Kind,
 		protoreflect.Sfixed64Kind:
 		return h.hashInt(value.Int())
-	case protoreflect.FloatKind,
+	case
+		protoreflect.FloatKind,
 		protoreflect.DoubleKind:
 		return h.hashFloat(value.Float())
-	case protoreflect.StringKind:
+	case
+		protoreflect.StringKind:
 		return h.hashString(value.String())
-	case protoreflect.BytesKind:
+	case
+		protoreflect.BytesKind:
 		return h.hashBytes(value.Bytes())
-	case protoreflect.MessageKind:
+	case
+		protoreflect.MessageKind:
 		return h.hashMessage(value.Message())
-	case protoreflect.GroupKind:
+	case
+		protoreflect.GroupKind:
 		return nil, fmt.Errorf("protoreflect.GroupKind: not implemented: %T", value)
 	}
 	return nil, fmt.Errorf("unexpected field kind: %v (%T)", kind, value)
@@ -259,14 +239,14 @@ func (h *hasher) hashMap(kd, fd protoreflect.FieldDescriptor, m protoreflect.Map
 	var errValue error
 	var errKey protoreflect.MapKey
 	m.Range(func(mk protoreflect.MapKey, v protoreflect.Value) bool {
-		khash, err := h.hashField(kd, mk.Value())
+		khash, err := h.hashFieldValue(kd, mk.Value())
 		if err != nil {
 			errKey = mk
 			errValue = err
 			return false
 		}
 
-		vhash, err := h.hashField(fd, v)
+		vhash, err := h.hashFieldValue(fd, v)
 		if err != nil {
 			errKey = mk
 			errValue = err
