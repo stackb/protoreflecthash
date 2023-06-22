@@ -1,5 +1,7 @@
 #!/bin/bash
 
+BAZEL='bzl' # or bazelisk
+
 write_workspace() {
     cat << EOF > WORKSPACE
 workspace(name = "com_github_stackb_protoreflecthash")
@@ -43,19 +45,15 @@ load("@gazelle//:def.bzl", "gazelle")
 # gazelle:resolve go go github.com/stackb/protoreflecthash/test_protos/generated/latest/proto3 @com_github_stackb_protoreflecthash//test_protos/generated/latest/proto3
 
 gazelle(name = "gazelle")
-endef
-
-define BAZELVERSION
-endef
 EOF
 }
 
 run_gazelle() {
-    bazel run gazelle
+    "${BAZEL}" run gazelle
 }
 
 build_targets() {
-	bazel build \
+	"${BAZEL}" build \
 		//test_protos/schema/proto3:proto3_go_proto \
 		//test_protos/schema/proto2:proto2_go_proto \
 		//test_protos:protoset
@@ -75,7 +73,7 @@ copy_protoset() {
 }
 
 clean() {
-	bazel clean
+	"${BAZEL}" clean
 	rm .bazelversion .bazelrc MODULE.bazel WORKSPACE
 	find . -name 'BUILD.bazel' | xargs rm
 }
@@ -92,4 +90,5 @@ main() {
     copy_protoset
 }
 
-clean
+main
+# clean
