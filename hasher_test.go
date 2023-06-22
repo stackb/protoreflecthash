@@ -18,6 +18,7 @@ import (
 	"google.golang.org/protobuf/types/descriptorpb"
 	"google.golang.org/protobuf/types/dynamicpb"
 	"google.golang.org/protobuf/types/known/durationpb"
+	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
@@ -1614,8 +1615,97 @@ func TestHashUInt64Value(t *testing.T) {
 	}
 }
 
-func TestHashRepeatedFields(t *testing.T) {
+func TestHashStructValue(t *testing.T) {
+	for name, tc := range map[string]hashTestCase{
+		"null": {
+			protos: []proto.Message{
+				&structpb.Value{Kind: &structpb.Value_NullValue{}},
+			},
+			json: "null",
+			obj:  nil,
+			want: "1b16b1df538ba12dc3f97edbb85caa7050d46c148134290feba80f8236c83db9",
+		},
+		"number": {
+			protos: []proto.Message{
+				&structpb.Value{Kind: &structpb.Value_NumberValue{}},
+			},
+			json: "0.0",
+			obj:  0.0,
+			want: "60101d8c9cb988411468e38909571f357daa67bff5a7b0a3f9ae295cd4aba33d",
+		},
+		"string": {
+			protos: []proto.Message{
+				&structpb.Value{Kind: &structpb.Value_StringValue{StringValue: "bob"}},
+			},
+			json: `"bob"`,
+			obj:  "bob",
+			want: "5ef421eb52293e5e3919d3c6f08413b873129dd859f4d0ff8273e13a494b9e9e",
+		},
+		"bool": {
+			protos: []proto.Message{
+				&structpb.Value{Kind: &structpb.Value_BoolValue{BoolValue: true}},
+			},
+			json: `true`,
+			obj:  true,
+			want: "7dc96f776c8423e57a2785489a3f9c43fb6e756876d6ad9a9cac4aa4e72ec193",
+		},
+		"struct (empty)": {
+			protos: []proto.Message{
+				&structpb.Value{Kind: &structpb.Value_StructValue{
+					StructValue: &structpb.Struct{},
+				}},
+			},
+			json: `{}`,
+			obj:  nil,
+			want: "18ac3e7343f016890c510e93f935261169d9e3f565436429830faf0934f4f8e4",
+		},
+		"struct (non-empty)": {
+			protos: []proto.Message{
+				&structpb.Value{Kind: &structpb.Value_StructValue{
+					StructValue: &structpb.Struct{
+						Fields: map[string]*structpb.Value{
+							"testing": {
+								Kind: &structpb.Value_NullValue{},
+							},
+						},
+					},
+				}},
+			},
+			json: `{"testing": null}`,
+			obj:  map[string]interface{}{"testing": nil},
+			want: "c41bb94244de3717a2643ee980e392a69cc811aaae18a35370c306fb5f2123b0",
+		},
+		"list (empty)": {
+			protos: []proto.Message{
+				&structpb.Value{Kind: &structpb.Value_ListValue{
+					ListValue: &structpb.ListValue{},
+				}},
+			},
+			json: `[]`,
+			obj:  nil,
+			want: "acac86c0e609ca906f632b0e2dacccb2b77d22b0621f20ebece1a4835b93f6f0",
+		},
+		"list (non-empty)": {
+			protos: []proto.Message{
+				&structpb.Value{Kind: &structpb.Value_ListValue{
+					ListValue: &structpb.ListValue{
+						Values: []*structpb.Value{
+							{Kind: &structpb.Value_StringValue{StringValue: "foo"}},
+							{Kind: &structpb.Value_StringValue{StringValue: "bar"}},
+						},
+					},
+				}},
+			},
+			json: `["foo", "bar"]`,
+			obj:  []string{"foo", "bar"},
+			want: "32ae896c413cfdc79eec68be9139c86ded8b279238467c216cf2bec4d5f1e4a2",
+		},
+	} {
+		tc.Check(name, t)
+	}
+}
 
+func TestHashRepeatedFields(t *testing.T) {
 	for name, tc := range map[string]hashTestCase{
 		"empty lists": {
 			fieldNamesAsKeys: true,

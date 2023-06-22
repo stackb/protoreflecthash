@@ -317,7 +317,7 @@ func (h *hasher) hashWellKnownType(md protoreflect.MessageDescriptor, msg protor
 	case protoreflect.FullName("google.protobuf.UInt64Value"):
 		hash, err = h.hashGoogleProtobufUint64Value(md, msg)
 	case protoreflect.FullName("google.protobuf.Value"):
-		hash, err = h.hashGoogleProtobufStructValue(md, msg)
+		hash, err = h.hashGoogleProtobufValue(md, msg)
 	default:
 		return nil, nil, false // no special handling needed, use hashMessage
 	}
@@ -386,13 +386,30 @@ func (h *hasher) hashGoogleProtobufStringValue(md protoreflect.MessageDescriptor
 	return h.hashString(msg.Get(md.Fields().ByName(valueName)).String())
 }
 
-func (h *hasher) hashGoogleProtobufStructValue(md protoreflect.MessageDescriptor, msg protoreflect.Message) ([]byte, error) {
+func (h *hasher) hashGoogleProtobufValue(md protoreflect.MessageDescriptor, msg protoreflect.Message) ([]byte, error) {
 	od := md.Oneofs().ByName("kind")
 	fd := msg.WhichOneof(od)
 	if fd == nil {
 		return nil, fmt.Errorf("invalid struct value: one value must be populated")
 	}
-	return h.hashFieldValue(fd, msg.Get(fd))
+	value := msg.Get(fd)
+
+	switch fd.Name() {
+	case "null_value":
+		return hashNil()
+	case "number_value":
+		return h.hashFloat(value.Float())
+	case "string_value":
+		return h.hashString(value.String())
+	case "bool_value":
+		return h.hashBool(value.Bool())
+	case "struct_value":
+		return h.hashGoogleProtobufStruct(value.Message().Descriptor(), value.Message())
+	case "list_value":
+		return h.hashGoogleProtobufListValue(value.Message().Descriptor(), value.Message())
+	default:
+		return nil, fmt.Errorf("unexpected struct value kind: %s", fd.Name())
+	}
 }
 
 func (h *hasher) hashGoogleProtobufListValue(md protoreflect.MessageDescriptor, msg protoreflect.Message) ([]byte, error) {
