@@ -19,7 +19,7 @@ syntax = "proto3";
 
 package schema.proto3;
 
-option go_package = "github.com/pcj/objecthash-proto/test_protos/generated/latest/proto3";
+option go_package = "github.com/stackb/protoreflecthash/test_protos/generated/latest/proto3";
 
 // This file is empty because proto3 removed most of the features that are
 // potentially harmful for backwards compatibility.

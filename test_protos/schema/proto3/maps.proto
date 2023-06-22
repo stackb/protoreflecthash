@@ -16,7 +16,7 @@ syntax = "proto3";
 
 package schema.proto3;
 
-option go_package = "github.com/pcj/objecthash-proto/test_protos/generated/latest/proto3";
+option go_package = "github.com/stackb/protoreflecthash/test_protos/generated/latest/proto3";
 
 import "test_protos/schema/proto3/simple.proto";
 import "test_protos/schema/proto3/planets.proto";

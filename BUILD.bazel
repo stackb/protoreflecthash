@@ -2,6 +2,8 @@ load("@rules_go//go:def.bzl", "go_library", "go_test")
 load("@gazelle//:def.bzl", "gazelle")
 
 # gazelle:prefix github.com/stackb/protoreflecthash
+# gazelle:resolve go go github.com/stackb/protoreflecthash/test_protos/generated/latest/proto2 @com_github_stackb_protoreflecthash//test_protos/generated/latest/proto2
+# gazelle:resolve go go github.com/stackb/protoreflecthash/test_protos/generated/latest/proto3 @com_github_stackb_protoreflecthash//test_protos/generated/latest/proto3
 
 gazelle(name = "gazelle")
 
@@ -30,6 +32,7 @@ go_test(
     embed = [":protoreflecthash"],
     embedsrcs = ["testdata/protoset.pb"],
     deps = [
+        "//test_protos/generated/latest/proto2",
         "//test_protos/generated/latest/proto3",
         "@com_github_benlaurie_objecthash//go/objecthash:go_default_library",
         "@com_github_google_go_cmp//cmp",
@@ -40,5 +43,6 @@ go_test(
         "@org_golang_google_protobuf//reflect/protoregistry",
         "@org_golang_google_protobuf//types/descriptorpb",
         "@org_golang_google_protobuf//types/dynamicpb",
+        "@org_golang_google_protobuf//types/known/timestamppb",
     ],
 )

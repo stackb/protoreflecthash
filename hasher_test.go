@@ -17,6 +17,7 @@ import (
 	"google.golang.org/protobuf/reflect/protoregistry"
 	"google.golang.org/protobuf/types/descriptorpb"
 	"google.golang.org/protobuf/types/dynamicpb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	pb2_latest "github.com/stackb/protoreflecthash/test_protos/generated/latest/proto2"
 	pb3_latest "github.com/stackb/protoreflecthash/test_protos/generated/latest/proto3"
@@ -975,6 +976,64 @@ func TestHashOtherTypes(t *testing.T) {
 			// No equivalent JSON: JSON does not have a "bytes" type.
 			obj:  map[string][]byte{"bytes_field": []byte("\000\000\000")},
 			want: "fdd59e1f3120117943124cb9c39da79ac47ea631343ff9154dffb0e64550789c",
+		},
+	} {
+		tc.Check(name, t)
+	}
+}
+
+// TestHashOtherTypes performs tests on types that do not have their own test file.
+func TestHashTimestamp(t *testing.T) {
+	for name, tc := range map[string]hashTestCase{
+		"Empty/Zero Timestamps": {
+			// The semantics of the Timestamp object imply that the distinction between
+			// unset and zero happen at the message level, rather than the field level.
+			//
+			// As a result, an unset timestamp is one where the proto itself is nil,
+			// while an explicitly set timestamp with unset fields is considered to be
+			// explicitly set to 0.
+			//
+			// This is unlike normal proto3 messages, where unset/zero fields must be
+			// considered to be unset, because they're indistinguishable in the general
+			// case.
+			protos: []proto.Message{
+				&timestamppb.Timestamp{},
+				&timestamppb.Timestamp{Seconds: 0, Nanos: 0},
+			},
+			// JSON treats all numbers as floats, so it is not possible to have an equivalent JSON string.
+			obj:  []int64{0, 0},
+			want: "3a82b649344529f03f52c1833f5aecc488a53b31461a1f54c305d149b12b8f53",
+		},
+		"Normal Timestamps": {
+			protos: []proto.Message{
+				&timestamppb.Timestamp{Seconds: 1525450021, Nanos: 123456789},
+			},
+			// JSON treats all numbers as floats, so it is not possible to have an equivalent JSON string.
+			obj:  []int64{1525450021, 123456789},
+			want: "1fd36770664df599ad44e4e4f06b1fad6ef7a4b3f316d79ca11bea668032a199",
+		},
+		"Timestamps within other protos (zero)": {
+			fieldNamesAsKeys: true,
+			protos: []proto.Message{
+				&pb2_latest.KnownTypes{TimestampField: &timestamppb.Timestamp{}},
+				&pb2_latest.KnownTypes{TimestampField: &timestamppb.Timestamp{Seconds: 0, Nanos: 0}},
+
+				&pb3_latest.KnownTypes{TimestampField: &timestamppb.Timestamp{}},
+				&pb3_latest.KnownTypes{TimestampField: &timestamppb.Timestamp{Seconds: 0, Nanos: 0}},
+			},
+			// JSON treats all numbers as floats, so it is not possible to have an equivalent JSON string.
+			obj:  map[string][]int64{"timestamp_field": {0, 0}},
+			want: "8457fe431752dbc5c47301c2546fcf6f0ad8c5317092b443e187d18e312e497e",
+		},
+		"Timestamps within other protos (non-zero)": {
+			fieldNamesAsKeys: true,
+			protos: []proto.Message{
+				&pb2_latest.KnownTypes{TimestampField: &timestamppb.Timestamp{Seconds: 1525450021, Nanos: 123456789}},
+				&pb3_latest.KnownTypes{TimestampField: &timestamppb.Timestamp{Seconds: 1525450021, Nanos: 123456789}},
+			},
+			// JSON treats all numbers as floats, so it is not possible to have an equivalent JSON string.
+			obj:  map[string][]int64{"timestamp_field": {1525450021, 123456789}},
+			want: "cf99942e3f8d1212f4ce263e206d64e29525b97b91368e71f9595bce83ac6a3e",
 		},
 	} {
 		tc.Check(name, t)
