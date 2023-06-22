@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -euo pipefail
+
 BAZEL='bzl' # or bazelisk
 
 write_workspace() {
@@ -38,6 +40,7 @@ EOF
 write_bazelbuild() {
     cat << EOF > BUILD.bazel
 load("@rules_go//go:def.bzl", "go_library", "go_test")
+load("@rules_proto//proto:defs.bzl", "proto_descriptor_set")
 load("@gazelle//:def.bzl", "gazelle")
 
 # gazelle:prefix github.com/stackb/protoreflecthash
@@ -45,6 +48,14 @@ load("@gazelle//:def.bzl", "gazelle")
 # gazelle:resolve go go github.com/stackb/protoreflecthash/test_protos/generated/latest/proto3 @com_github_stackb_protoreflecthash//test_protos/generated/latest/proto3
 
 gazelle(name = "gazelle")
+
+proto_descriptor_set(
+    name = "protoset",
+    deps = [
+        "//test_protos/schema/proto2:proto2_proto",
+        "//test_protos/schema/proto3:proto3_proto",
+    ],
+)
 EOF
 }
 
@@ -56,7 +67,7 @@ build_targets() {
 	"${BAZEL}" build \
 		//test_protos/schema/proto3:proto3_go_proto \
 		//test_protos/schema/proto2:proto2_go_proto \
-		//test_protos:protoset
+		//:protoset
 }
 
 copy_pb_go() {
@@ -68,7 +79,7 @@ copy_pb_go() {
 }
 
 copy_protoset() {
-	cp -f bazel-bin/test_protos/protoset.pb \
+	cp -f bazel-bin/protoset.pb \
 		testdata/	
 }
 
