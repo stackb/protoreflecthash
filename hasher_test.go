@@ -473,7 +473,7 @@ func TestHashEmpty(t *testing.T) {
 func TestHashIntegerFields(t *testing.T) {
 	for name, tc := range map[string]hashTestCase{
 		"equivalence": {
-			fieldNamesAsKeys: true,
+			options: []Option{FieldNamesAsKeys()},
 			protos: []proto.Message{
 				&pb2_latest.Fixed32Message{Values: []uint32{0, 1, 2}},
 				&pb2_latest.Fixed64Message{Values: []uint64{0, 1, 2}},
@@ -502,9 +502,9 @@ func TestHashIntegerFields(t *testing.T) {
 			want: "42794fb0e73c2b5f427aa76486555d07589359054848396ddf173e9e0b4ab931",
 		},
 		"equivalence (with negatives)": {
-			fieldNamesAsKeys: true,
-			protos:           []proto.Message{},
-			obj:              map[string][]int32{"values": {-2, -1, 0, 1, 2}},
+			options: []Option{FieldNamesAsKeys()},
+			protos:  []proto.Message{},
+			obj:     map[string][]int32{"values": {-2, -1, 0, 1, 2}},
 			// No equivalent JSON: JSON does not have an "integer" type. All numbers are floats.
 			want: "6cb613a53b6086b88dbda40b30e902adb41288b0b1f7a627905beaa764ee49cb",
 		},
@@ -527,7 +527,7 @@ func TestHashFloatFields(t *testing.T) {
 			want: "08775d05cd028265e4956a95aef6c050a45652e9c59462da636a8460c5ed52f3",
 		},
 		"float fields (hashing key field strings)": {
-			fieldNamesAsKeys: true,
+			options: []Option{FieldNamesAsKeys()},
 			protos: []proto.Message{
 				&pb2_latest.DoubleMessage{Values: []float64{-2, -1, 0, 1, 2}},
 				&pb3_latest.DoubleMessage{Values: []float64{-2, -1, 0, 1, 2}},
@@ -539,7 +539,7 @@ func TestHashFloatFields(t *testing.T) {
 			want: "586202dddb0e98bb8ce0b7289e29a9f7397b9b1996f3f8fe788f4cfb230b7ee8",
 		},
 		"float fields (fractions 32)": {
-			fieldNamesAsKeys: true,
+			options: []Option{FieldNamesAsKeys()},
 			protos: []proto.Message{
 				&pb2_latest.DoubleMessage{Values: []float64{0.0078125, 7.888609052210118e-31}},
 				&pb3_latest.DoubleMessage{Values: []float64{0.0078125, 7.888609052210118e-31}},
@@ -551,7 +551,7 @@ func TestHashFloatFields(t *testing.T) {
 			want: "7b7cba0ed312bc6611f0523e7c46ce9a2ed9ecb798eb80e1cdf93c95faf503c7",
 		},
 		"float fields (fractions 64)": {
-			fieldNamesAsKeys: true,
+			options: []Option{FieldNamesAsKeys()},
 			protos: []proto.Message{
 				&pb2_latest.DoubleMessage{Values: []float64{-1.0, 1.5, 1000.000244140625, 1267650600228229401496703205376, 32.0, 13.0009765625}},
 				&pb3_latest.DoubleMessage{Values: []float64{-1.0, 1.5, 1000.000244140625, 1267650600228229401496703205376, 32.0, 13.0009765625}},
@@ -562,7 +562,7 @@ func TestHashFloatFields(t *testing.T) {
 			want: "ac261ff3d8b933998e3fea278539eb40b15811dd835d224e0150dce4794168b7",
 		},
 		"float fields (Non-equivalence of Floats using different representations)": {
-			fieldNamesAsKeys: true,
+			options: []Option{FieldNamesAsKeys()},
 			protos: []proto.Message{
 				&pb2_latest.FloatMessage{Value: proto.Float32(0.1)},
 				&pb3_latest.FloatMessage{Value: 0.1},
@@ -576,7 +576,7 @@ func TestHashFloatFields(t *testing.T) {
 			want: "7081ed6a1e7ad8e7f981a2894a3bd6d3b0b0033b69c03cce84b61dd063f4efaa",
 		},
 		"float fields (There's no float32 number that is equivalent to a float64 '0.1'.)": {
-			fieldNamesAsKeys: true,
+			options: []Option{FieldNamesAsKeys()},
 			protos: []proto.Message{
 				&pb2_latest.DoubleMessage{Value: proto.Float64(0.1)},
 				&pb3_latest.DoubleMessage{Value: 0.1},
@@ -586,7 +586,7 @@ func TestHashFloatFields(t *testing.T) {
 			want: "e175fbe785bae88b598d3ecaad8a64d2a998e9f673173a226868f2ef312a5225",
 		},
 		"float fields (Non-equivalence of Floats using different representations - decimal)": {
-			fieldNamesAsKeys: true,
+			options: []Option{FieldNamesAsKeys()},
 			protos: []proto.Message{
 				&pb2_latest.FloatMessage{Value: proto.Float32(1.2163543e+25)},
 				&pb3_latest.FloatMessage{Value: 1.2163543e+25},
@@ -599,7 +599,7 @@ func TestHashFloatFields(t *testing.T) {
 			want: "bbb17cf7312f2ba5b0002d781f16d1ab50c3d25dc044ed3428750826a1c68653",
 		},
 		"float fields (no float32 number that is equivalent to a float64 '1e+25')": {
-			fieldNamesAsKeys: true,
+			options: []Option{FieldNamesAsKeys()},
 			protos: []proto.Message{
 				&pb2_latest.DoubleMessage{Value: proto.Float64(1e+25)},
 				&pb3_latest.DoubleMessage{Value: 1e+25},
@@ -609,7 +609,7 @@ func TestHashFloatFields(t *testing.T) {
 			want: "874beabbede24974a9f3f74e3448670e0c42c0aaba082f18b963b72253649362",
 		},
 		"float fields (proto2 unset)": {
-			fieldNamesAsKeys: true,
+			options: []Option{FieldNamesAsKeys()},
 			protos: []proto.Message{
 				&pb2_latest.DoubleMessage{Value: proto.Float64(0)},
 				&pb2_latest.FloatMessage{Value: proto.Float32(0)},
@@ -619,7 +619,7 @@ func TestHashFloatFields(t *testing.T) {
 			want: "94136b0850db069dfd7bee090fc7ede48aa7da53ae3cc8514140a493818c3b91",
 		},
 		"float fields (special NaN)": {
-			fieldNamesAsKeys: true,
+			options: []Option{FieldNamesAsKeys()},
 			protos: []proto.Message{
 				&pb2_latest.DoubleMessage{Value: proto.Float64(math.NaN())},
 				&pb3_latest.DoubleMessage{Value: math.NaN()},
@@ -634,7 +634,7 @@ func TestHashFloatFields(t *testing.T) {
 			want: "16614de29b0823c41cabc993fa6c45da87e4e74c5d836edbcddcfaaf06ffafd1",
 		},
 		"float fields (special Inf(+))": {
-			fieldNamesAsKeys: true,
+			options: []Option{FieldNamesAsKeys()},
 			protos: []proto.Message{
 				&pb2_latest.DoubleMessage{Value: proto.Float64(math.Inf(1))},
 				&pb3_latest.DoubleMessage{Value: math.Inf(1)},
@@ -649,7 +649,7 @@ func TestHashFloatFields(t *testing.T) {
 			want: "c58cd512e86204e99cb6c11d83bb3daaccdd946e66383004cb9b7f87f762935c",
 		},
 		"float fields (special Inf(-))": {
-			fieldNamesAsKeys: true,
+			options: []Option{FieldNamesAsKeys()},
 			protos: []proto.Message{
 				&pb2_latest.DoubleMessage{Value: proto.Float64(math.Inf(-1))},
 				&pb3_latest.DoubleMessage{Value: math.Inf(-1)},
@@ -671,7 +671,7 @@ func TestHashFloatFields(t *testing.T) {
 func TestHashStringFields(t *testing.T) {
 	for name, tc := range map[string]hashTestCase{
 		"unicode": {
-			fieldNamesAsKeys: true,
+			options: []Option{FieldNamesAsKeys()},
 			protos: []proto.Message{
 				&pb2_latest.Simple{StringField: proto.String("你好")},
 				&pb3_latest.Simple{StringField: "你好"},
@@ -681,7 +681,7 @@ func TestHashStringFields(t *testing.T) {
 			want: "de0086ad683b5f8affffbbcbe57d09e5377aa47cb32f6f0b1bdecd2e54b9137d",
 		},
 		"esc": {
-			fieldNamesAsKeys: true,
+			options: []Option{FieldNamesAsKeys()},
 			protos: []proto.Message{
 				&pb2_latest.Simple{StringField: proto.String("\u03d3")},
 				&pb3_latest.Simple{StringField: "\u03d3"},
@@ -693,7 +693,7 @@ func TestHashStringFields(t *testing.T) {
 		"normalization": {
 			// Note that this is the same character as above, but hashes differently
 			// unless unicode normalisation is applied.
-			fieldNamesAsKeys: true,
+			options: []Option{FieldNamesAsKeys()},
 			protos: []proto.Message{
 				&pb2_latest.Simple{StringField: proto.String("\u03d2\u0301")},
 				&pb3_latest.Simple{StringField: "\u03d2\u0301"},
@@ -703,7 +703,7 @@ func TestHashStringFields(t *testing.T) {
 			want: "1f33a91552e7a527fdf2de0d25f815590f1a3e2dc8340507d20d4ee42462d0a2",
 		},
 		"repeated empty": {
-			fieldNamesAsKeys: true,
+			options: []Option{FieldNamesAsKeys()},
 			protos: []proto.Message{
 				&pb2_latest.Repetitive{StringField: []string{""}},
 				&pb3_latest.Repetitive{StringField: []string{""}},
@@ -713,7 +713,7 @@ func TestHashStringFields(t *testing.T) {
 			want: "63e64f0ed286e0d8f30735e6646ea9ef48174c23ba09a05288b4233c6e6a9419",
 		},
 		"repeated unicode": {
-			fieldNamesAsKeys: true,
+			options: []Option{FieldNamesAsKeys()},
 			protos: []proto.Message{
 				&pb2_latest.Repetitive{StringField: []string{"", "Test", "你好", "\u03d3"}},
 				&pb3_latest.Repetitive{StringField: []string{"", "Test", "你好", "\u03d3"}},
@@ -731,7 +731,7 @@ func TestHashStringFields(t *testing.T) {
 func TestHashProto2DefaultFields(t *testing.T) {
 	for name, tc := range map[string]hashTestCase{
 		"simple bool": {
-			fieldNamesAsKeys: true,
+			options: []Option{FieldNamesAsKeys()},
 			protos: []proto.Message{
 				&pb2_latest.Simple{BoolField: proto.Bool(false)},
 			},
@@ -740,7 +740,7 @@ func TestHashProto2DefaultFields(t *testing.T) {
 			want: "1ab5ecdbe4176473024f7efd080593b740d22d076d06ea6edd8762992b484a12",
 		},
 		"simple bytes": {
-			fieldNamesAsKeys: true,
+			options: []Option{FieldNamesAsKeys()},
 			protos: []proto.Message{
 				&pb2_latest.Simple{BytesField: []byte{}},
 			},
@@ -749,7 +749,7 @@ func TestHashProto2DefaultFields(t *testing.T) {
 			want: "10a0dbbfa097b731c7a505246ffa96a82f997b8c25892d76d3b8b1355e529e05",
 		},
 		"simple string": {
-			fieldNamesAsKeys: true,
+			options: []Option{FieldNamesAsKeys()},
 			protos: []proto.Message{
 				&pb2_latest.Simple{StringField: proto.String("")},
 			},
@@ -758,7 +758,7 @@ func TestHashProto2DefaultFields(t *testing.T) {
 			want: "2d60c2941830ef4bb14424e47c6cd010f2b95e5e34291f429998288a60ac8c22",
 		},
 		"ints": {
-			fieldNamesAsKeys: true,
+			options: []Option{FieldNamesAsKeys()},
 			protos: []proto.Message{
 				&pb2_latest.Fixed32Message{Value: proto.Uint32(0)},
 				&pb2_latest.Fixed64Message{Value: proto.Uint64(0)},
@@ -775,7 +775,7 @@ func TestHashProto2DefaultFields(t *testing.T) {
 			want: "49f031b73dad26859ffeea8a2bb170aaf7358d2277b00c7fc7ea8edcd37e53a1",
 		},
 		"floats": {
-			fieldNamesAsKeys: true,
+			options: []Option{FieldNamesAsKeys()},
 			protos: []proto.Message{
 				&pb2_latest.DoubleMessage{Value: proto.Float64(0.0)},
 				&pb2_latest.FloatMessage{Value: proto.Float32(0.0)},
@@ -792,7 +792,7 @@ func TestHashProto2DefaultFields(t *testing.T) {
 func TestHashOneofFields(t *testing.T) {
 	for name, tc := range map[string]hashTestCase{
 		"empty": {
-			fieldNamesAsKeys: true,
+			options: []Option{FieldNamesAsKeys()},
 			protos: []proto.Message{
 				&pb2_latest.Singleton{},
 				&pb3_latest.Singleton{},
@@ -805,7 +805,6 @@ func TestHashOneofFields(t *testing.T) {
 			want: "18ac3e7343f016890c510e93f935261169d9e3f565436429830faf0934f4f8e4",
 		},
 		"one selected but empty": {
-			fieldNamesAsKeys: false,
 			protos: []proto.Message{
 				// Only proto2 has empty values.
 				&pb2_latest.Simple{BoolField: proto.Bool(false)},
@@ -820,7 +819,6 @@ func TestHashOneofFields(t *testing.T) {
 			want: "8a956cfa8e9b45b738cb8dc8a3dc7126dab3cbd2c07c80fa1ec312a1a31ed709",
 		},
 		"One of the options selected with content (empty string)": {
-			fieldNamesAsKeys: false,
 			protos: []proto.Message{
 				// Only proto2 has empty values.
 				&pb2_latest.Simple{StringField: proto.String("")},
@@ -835,7 +833,6 @@ func TestHashOneofFields(t *testing.T) {
 			want: "79cff9d2d0ee6c6071c82b58d1a2fcf056b58c4501606862489e5731644c755a",
 		},
 		"One of the options selected with content (ints)": {
-			fieldNamesAsKeys: false,
 			protos: []proto.Message{
 				// Only proto2 has empty values.
 				&pb2_latest.Simple{Int32Field: proto.Int32(0)},
@@ -850,7 +847,6 @@ func TestHashOneofFields(t *testing.T) {
 			want: "bafd42680c987c47a76f72e08ed975877162efdb550d2c564c758dc7d988468f",
 		},
 		"One of the options selected with content (strings)": {
-			fieldNamesAsKeys: false,
 			protos: []proto.Message{
 				&pb2_latest.Simple{StringField: proto.String("TEST!")},
 				&pb3_latest.Simple{StringField: "TEST!"},
@@ -876,7 +872,6 @@ func TestHashOneofFields(t *testing.T) {
 			want: "336cdbca99fd46157bc47bcc456f0ac7f1ef3be7a79acf3535f671434b53944f",
 		},
 		"One of the options selected with content (equiv case ints)": {
-			fieldNamesAsKeys: false,
 			protos: []proto.Message{
 				&pb2_latest.Simple{Int32Field: proto.Int32(99)},
 				&pb3_latest.Simple{Int32Field: 99},
@@ -888,7 +883,6 @@ func TestHashOneofFields(t *testing.T) {
 			want: "65517521bc278528d25caf1643da0f094fd88dad50205c9743e3c984a7c53b7d",
 		},
 		"One of the options selected with content (nested)": {
-			fieldNamesAsKeys: false,
 			protos: []proto.Message{
 				&pb2_latest.Simple{SingletonField: &pb2_latest.Singleton{}},
 				&pb3_latest.Simple{SingletonField: &pb3_latest.Singleton{}},
@@ -900,7 +894,6 @@ func TestHashOneofFields(t *testing.T) {
 			want: "4967c72525c764229f9fbf1294764c9aedc0d4f9f4c52e04a19c7f35ca65f517",
 		},
 		"One of the options selected with content (double nested)": {
-			fieldNamesAsKeys: false,
 			protos: []proto.Message{
 				&pb2_latest.Simple{SingletonField: &pb2_latest.Singleton{Singleton: &pb2_latest.Singleton_TheSingleton{TheSingleton: &pb2_latest.Singleton{}}}},
 				&pb3_latest.Simple{SingletonField: &pb3_latest.Singleton{Singleton: &pb3_latest.Singleton_TheSingleton{TheSingleton: &pb3_latest.Singleton{}}}},
@@ -919,7 +912,7 @@ func TestHashOneofFields(t *testing.T) {
 func TestHashMapFields(t *testing.T) {
 	for name, tc := range map[string]hashTestCase{
 		"boolean maps": {
-			fieldNamesAsKeys: true,
+			options: []Option{FieldNamesAsKeys()},
 			protos: []proto.Message{
 				&pb2_latest.BoolMaps{BoolToString: map[bool]string{true: "NOT FALSE", false: "NOT TRUE"}},
 				&pb3_latest.BoolMaps{BoolToString: map[bool]string{true: "NOT FALSE", false: "NOT TRUE"}},
@@ -929,7 +922,7 @@ func TestHashMapFields(t *testing.T) {
 			want: "d89d053bf7b37b4784832c72445661db99538fe1d490988575409a9040084f18",
 		},
 		"integer maps": {
-			fieldNamesAsKeys: true,
+			options: []Option{FieldNamesAsKeys()},
 			protos: []proto.Message{
 				&pb2_latest.IntMaps{IntToString: map[int64]string{0: "ZERO"}},
 				&pb3_latest.IntMaps{IntToString: map[int64]string{0: "ZERO"}},
@@ -939,7 +932,7 @@ func TestHashMapFields(t *testing.T) {
 			want: "53892192fb69cbd93ceb0552ca571b8505887f25d6f12822025341f16983a6af",
 		},
 		"string maps": {
-			fieldNamesAsKeys: true,
+			options: []Option{FieldNamesAsKeys()},
 			protos: []proto.Message{
 				&pb2_latest.StringMaps{StringToString: map[string]string{"foo": "bar"}},
 				&pb3_latest.StringMaps{StringToString: map[string]string{"foo": "bar"}},
@@ -949,7 +942,7 @@ func TestHashMapFields(t *testing.T) {
 			want: "cadfe560995647c63c20234a6409d2b1b8cf8dcf7d8e420ca33f23ff9ca9abfa",
 		},
 		"string maps (unicode)": {
-			fieldNamesAsKeys: true,
+			options: []Option{FieldNamesAsKeys()},
 			protos: []proto.Message{
 				&pb2_latest.StringMaps{StringToString: map[string]string{
 					"": "你好", "你好": "\u03d3", "\u03d3": "\u03d2\u0301"}},
@@ -961,7 +954,7 @@ func TestHashMapFields(t *testing.T) {
 			want: "be8b5ae6d5986cde37ab8b395c66045fbb69a8b3b534fa34df7c19a640f4cd66",
 		},
 		"message maps": {
-			fieldNamesAsKeys: true,
+			options: []Option{FieldNamesAsKeys()},
 			protos: []proto.Message{
 				&pb2_latest.StringMaps{StringToSimple: map[string]*pb2_latest.Simple{"foo": {}}},
 				&pb3_latest.StringMaps{StringToSimple: map[string]*pb3_latest.Simple{"foo": {}}},
@@ -987,7 +980,7 @@ func TestHashOtherTypes(t *testing.T) {
 			want: "1b16b1df538ba12dc3f97edbb85caa7050d46c148134290feba80f8236c83db9",
 		},
 		"booleans (true)": {
-			fieldNamesAsKeys: true,
+			options: []Option{FieldNamesAsKeys()},
 			protos: []proto.Message{
 				&pb2_latest.Simple{BoolField: proto.Bool(true)},
 				&pb3_latest.Simple{BoolField: true},
@@ -997,7 +990,7 @@ func TestHashOtherTypes(t *testing.T) {
 			want: "7b2ac6048e6c8797205505ea486539a5589583be43154da88785a5121e2d6899",
 		},
 		"booleans (false)": {
-			fieldNamesAsKeys: true,
+			options: []Option{FieldNamesAsKeys()},
 			protos: []proto.Message{
 				&pb2_latest.Simple{BoolField: proto.Bool(false)},
 				// proto3 scalar fields set to their default value are considered empty.
@@ -1007,7 +1000,7 @@ func TestHashOtherTypes(t *testing.T) {
 			want: "1ab5ecdbe4176473024f7efd080593b740d22d076d06ea6edd8762992b484a12",
 		},
 		"bytes": {
-			fieldNamesAsKeys: true,
+			options: []Option{FieldNamesAsKeys()},
 			protos: []proto.Message{
 				&pb2_latest.Simple{BytesField: []byte{0, 0, 0}},
 				&pb3_latest.Simple{BytesField: []byte{0, 0, 0}},
@@ -1051,7 +1044,7 @@ func TestHashTimestamp(t *testing.T) {
 			want: "1fd36770664df599ad44e4e4f06b1fad6ef7a4b3f316d79ca11bea668032a199",
 		},
 		"Timestamps within other protos (zero)": {
-			fieldNamesAsKeys: true,
+			options: []Option{FieldNamesAsKeys()},
 			protos: []proto.Message{
 				&pb2_latest.KnownTypes{TimestampField: &timestamppb.Timestamp{}},
 				&pb2_latest.KnownTypes{TimestampField: &timestamppb.Timestamp{Seconds: 0, Nanos: 0}},
@@ -1064,7 +1057,7 @@ func TestHashTimestamp(t *testing.T) {
 			want: "8457fe431752dbc5c47301c2546fcf6f0ad8c5317092b443e187d18e312e497e",
 		},
 		"Timestamps within other protos (non-zero)": {
-			fieldNamesAsKeys: true,
+			options: []Option{FieldNamesAsKeys()},
 			protos: []proto.Message{
 				&pb2_latest.KnownTypes{TimestampField: &timestamppb.Timestamp{Seconds: 1525450021, Nanos: 123456789}},
 				&pb3_latest.KnownTypes{TimestampField: &timestamppb.Timestamp{Seconds: 1525450021, Nanos: 123456789}},
@@ -1108,7 +1101,7 @@ func TestHashDuration(t *testing.T) {
 			want: "1fd36770664df599ad44e4e4f06b1fad6ef7a4b3f316d79ca11bea668032a199",
 		},
 		"Durations within other protos (zero)": {
-			fieldNamesAsKeys: true,
+			options: []Option{FieldNamesAsKeys()},
 			protos: []proto.Message{
 				&pb2_latest.KnownTypes{DurationField: &durationpb.Duration{}},
 				&pb2_latest.KnownTypes{DurationField: &durationpb.Duration{Seconds: 0, Nanos: 0}},
@@ -1121,7 +1114,7 @@ func TestHashDuration(t *testing.T) {
 			want: "80668dc83d8e5c0c9e24afba293e69cb1ce697772521f7a8ea3afc20a6dd617a",
 		},
 		"Durations within other protos (non-zero)": {
-			fieldNamesAsKeys: true,
+			options: []Option{FieldNamesAsKeys()},
 			protos: []proto.Message{
 				&pb2_latest.KnownTypes{DurationField: &durationpb.Duration{Seconds: 1525450021, Nanos: 123456789}},
 				&pb3_latest.KnownTypes{DurationField: &durationpb.Duration{Seconds: 1525450021, Nanos: 123456789}},
@@ -1155,7 +1148,7 @@ func TestHashBoolValue(t *testing.T) {
 			want: "7dc96f776c8423e57a2785489a3f9c43fb6e756876d6ad9a9cac4aa4e72ec193",
 		},
 		"BoolValue within other protos (not set)": {
-			fieldNamesAsKeys: true,
+			options: []Option{FieldNamesAsKeys()},
 			protos: []proto.Message{
 				&pb2_latest.KnownTypes{BoolValueField: nil},
 				&pb3_latest.KnownTypes{BoolValueField: nil},
@@ -1165,7 +1158,7 @@ func TestHashBoolValue(t *testing.T) {
 			want: "18ac3e7343f016890c510e93f935261169d9e3f565436429830faf0934f4f8e4",
 		},
 		"BoolValue within other protos (set, default false)": {
-			fieldNamesAsKeys: true,
+			options: []Option{FieldNamesAsKeys()},
 			protos: []proto.Message{
 				&pb2_latest.KnownTypes{BoolValueField: &wrapperspb.BoolValue{}},
 				&pb2_latest.KnownTypes{BoolValueField: &wrapperspb.BoolValue{Value: false}},
@@ -1177,7 +1170,7 @@ func TestHashBoolValue(t *testing.T) {
 			want: "8ec24416eca90851428f5b63b7529d2ea7d24fe0e9b3ca11ea2ee851d0ce2280",
 		},
 		"BoolValue within other protos (set, true)": {
-			fieldNamesAsKeys: true,
+			options: []Option{FieldNamesAsKeys()},
 			protos: []proto.Message{
 				&pb2_latest.KnownTypes{BoolValueField: &wrapperspb.BoolValue{Value: true}},
 				&pb3_latest.KnownTypes{BoolValueField: &wrapperspb.BoolValue{Value: true}},
@@ -1219,7 +1212,7 @@ func TestHashFloatValue(t *testing.T) {
 			want: "f01adc732390ab024d64080e0b173f0ee3a1610efbdd4ce2a13bbf8d9b26c639",
 		},
 		"FloatValue within other protos (not set)": {
-			fieldNamesAsKeys: true,
+			options: []Option{FieldNamesAsKeys()},
 			protos: []proto.Message{
 				&pb2_latest.KnownTypes{FloatValueField: nil},
 				&pb3_latest.KnownTypes{FloatValueField: nil},
@@ -1229,7 +1222,7 @@ func TestHashFloatValue(t *testing.T) {
 			want: "18ac3e7343f016890c510e93f935261169d9e3f565436429830faf0934f4f8e4",
 		},
 		"FloatValue within other protos (set, default 0.0)": {
-			fieldNamesAsKeys: true,
+			options: []Option{FieldNamesAsKeys()},
 			protos: []proto.Message{
 				&pb2_latest.KnownTypes{FloatValueField: &wrapperspb.FloatValue{}},
 				&pb2_latest.KnownTypes{FloatValueField: &wrapperspb.FloatValue{Value: 0.0}},
@@ -1241,7 +1234,7 @@ func TestHashFloatValue(t *testing.T) {
 			want: "75085520c0294c8467895b2bd9939cf4a6373629f95f155eb3c755c7debb326d",
 		},
 		"FloatValue within other protos (set, 1.0)": {
-			fieldNamesAsKeys: true,
+			options: []Option{FieldNamesAsKeys()},
 			protos: []proto.Message{
 				&pb2_latest.KnownTypes{FloatValueField: &wrapperspb.FloatValue{Value: 1.0}},
 				&pb3_latest.KnownTypes{FloatValueField: &wrapperspb.FloatValue{Value: 1.0}},
@@ -1255,64 +1248,24 @@ func TestHashFloatValue(t *testing.T) {
 	}
 }
 
-func TestHashDoubleValue(t *testing.T) {
+func TestHashMessageFullnameIdentifier(t *testing.T) {
 	for name, tc := range map[string]hashTestCase{
-		"0.0": {
+		"empty (without option)": {
 			protos: []proto.Message{
-				&wrapperspb.DoubleValue{},
-				&wrapperspb.DoubleValue{Value: 0.0},
-			},
-			json: `0.0`,
-			obj:  0.0,
-			want: "60101d8c9cb988411468e38909571f357daa67bff5a7b0a3f9ae295cd4aba33d",
-		},
-		"-1.0": {
-			protos: []proto.Message{
-				&wrapperspb.DoubleValue{Value: -1.0},
-			},
-			json: `-1.0`,
-			obj:  -1.0,
-			want: "f706daa44d7e40e21ea202c36119057924bb28a49949d8ddaa9c8c3c9367e602",
-		},
-		"+1.0": {
-			protos: []proto.Message{
-				&wrapperspb.DoubleValue{Value: 1.0},
-			},
-			json: `1.0`,
-			obj:  1.0,
-			want: "f01adc732390ab024d64080e0b173f0ee3a1610efbdd4ce2a13bbf8d9b26c639",
-		},
-		"DoubleValue within other protos (not set)": {
-			fieldNamesAsKeys: true,
-			protos: []proto.Message{
-				&pb2_latest.KnownTypes{DoubleValueField: nil},
-				&pb3_latest.KnownTypes{DoubleValueField: nil},
+				&pb3_latest.Empty{},
 			},
 			json: `{}`,
 			obj:  nil,
 			want: "18ac3e7343f016890c510e93f935261169d9e3f565436429830faf0934f4f8e4",
 		},
-		"DoubleValue within other protos (set, default 0.0)": {
-			fieldNamesAsKeys: true,
+		"empty (with option)": {
+			options: []Option{MessageFullnameIdentifier()},
 			protos: []proto.Message{
-				&pb2_latest.KnownTypes{DoubleValueField: &wrapperspb.DoubleValue{}},
-				&pb2_latest.KnownTypes{DoubleValueField: &wrapperspb.DoubleValue{Value: 0.0}},
-				&pb3_latest.KnownTypes{DoubleValueField: &wrapperspb.DoubleValue{}},
-				&pb3_latest.KnownTypes{DoubleValueField: &wrapperspb.DoubleValue{Value: 0.0}},
+				&pb3_latest.Empty{},
 			},
-			json: `{"double_value_field": 0.0}`,
-			obj:  map[string]float64{"double_value_field": 0.0},
-			want: "d593d09e840e41b2f5169561acf24a6b094f0dfb6850cf2a6dcea612f8990a41",
-		},
-		"DoubleValue within other protos (set, 1.0)": {
-			fieldNamesAsKeys: true,
-			protos: []proto.Message{
-				&pb2_latest.KnownTypes{DoubleValueField: &wrapperspb.DoubleValue{Value: 1.0}},
-				&pb3_latest.KnownTypes{DoubleValueField: &wrapperspb.DoubleValue{Value: 1.0}},
-			},
-			json: `{"double_value_field": 1.0}`,
-			obj:  map[string]float64{"double_value_field": 1.0},
-			want: "20ed14f30c84aaf5066a1e419eadb0214c7ab84d522f0150a1de709bae006cc2",
+			// json: `{}`, // skip json check: not possible to express typed structs
+			obj:  nil,
+			want: "f871a6b9331f109ef970f8130baffc29bb5753a2970f66af6004475171efdd9b",
 		},
 	} {
 		tc.Check(name, t)
@@ -1339,7 +1292,7 @@ func TestHashStringValue(t *testing.T) {
 			want: "462b68f5e3d75aed5f02841b4ffee068d4cf33ce1b155105b71a9e5f358026df",
 		},
 		"StringValue within other protos (not set)": {
-			fieldNamesAsKeys: true,
+			options: []Option{FieldNamesAsKeys()},
 			protos: []proto.Message{
 				&pb2_latest.KnownTypes{StringValueField: nil},
 				&pb3_latest.KnownTypes{StringValueField: nil},
@@ -1349,7 +1302,7 @@ func TestHashStringValue(t *testing.T) {
 			want: "18ac3e7343f016890c510e93f935261169d9e3f565436429830faf0934f4f8e4",
 		},
 		"StringValue within other protos (set, default empty)": {
-			fieldNamesAsKeys: true,
+			options: []Option{FieldNamesAsKeys()},
 			protos: []proto.Message{
 				&pb2_latest.KnownTypes{StringValueField: &wrapperspb.StringValue{}},
 				&pb2_latest.KnownTypes{StringValueField: &wrapperspb.StringValue{Value: ""}},
@@ -1361,7 +1314,7 @@ func TestHashStringValue(t *testing.T) {
 			want: "2ce75d087e557a68b232652d48e6aac5f3fc457c597a0ed07a1b63a4c2d16039",
 		},
 		"StringValue within other protos (set, nonempty)": {
-			fieldNamesAsKeys: true,
+			options: []Option{FieldNamesAsKeys()},
 			protos: []proto.Message{
 				&pb2_latest.KnownTypes{StringValueField: &wrapperspb.StringValue{Value: "bob"}},
 				&pb3_latest.KnownTypes{StringValueField: &wrapperspb.StringValue{Value: "bob"}},
@@ -1403,7 +1356,7 @@ func TestHashInt32Value(t *testing.T) {
 			want: "4cd9b7672d7fbee8fb51fb1e049f690342035f543a8efe734b7b5ffb0c154a45",
 		},
 		"Int32Value within other protos (not set)": {
-			fieldNamesAsKeys: true,
+			options: []Option{FieldNamesAsKeys()},
 			protos: []proto.Message{
 				&pb2_latest.KnownTypes{Int32ValueField: nil},
 				&pb3_latest.KnownTypes{Int32ValueField: nil},
@@ -1413,7 +1366,7 @@ func TestHashInt32Value(t *testing.T) {
 			want: "18ac3e7343f016890c510e93f935261169d9e3f565436429830faf0934f4f8e4",
 		},
 		"Int32Value within other protos (set, default 0)": {
-			fieldNamesAsKeys: true,
+			options: []Option{FieldNamesAsKeys()},
 			protos: []proto.Message{
 				&pb2_latest.KnownTypes{Int32ValueField: &wrapperspb.Int32Value{}},
 				&pb2_latest.KnownTypes{Int32ValueField: &wrapperspb.Int32Value{Value: 0}},
@@ -1425,7 +1378,7 @@ func TestHashInt32Value(t *testing.T) {
 			want: "f45c9b89d9a758f70fee58bad947bca07bd20a31119d927588e7bb11ef17180d",
 		},
 		"Int32Value within other protos (set, 1.0)": {
-			fieldNamesAsKeys: true,
+			options: []Option{FieldNamesAsKeys()},
 			protos: []proto.Message{
 				&pb2_latest.KnownTypes{Int32ValueField: &wrapperspb.Int32Value{Value: 1}},
 				&pb3_latest.KnownTypes{Int32ValueField: &wrapperspb.Int32Value{Value: 1}},
@@ -1467,7 +1420,7 @@ func TestHashInt64Value(t *testing.T) {
 			want: "4cd9b7672d7fbee8fb51fb1e049f690342035f543a8efe734b7b5ffb0c154a45",
 		},
 		"Int64Value within other protos (not set)": {
-			fieldNamesAsKeys: true,
+			options: []Option{FieldNamesAsKeys()},
 			protos: []proto.Message{
 				&pb2_latest.KnownTypes{Int64ValueField: nil},
 				&pb3_latest.KnownTypes{Int64ValueField: nil},
@@ -1477,7 +1430,7 @@ func TestHashInt64Value(t *testing.T) {
 			want: "18ac3e7343f016890c510e93f935261169d9e3f565436429830faf0934f4f8e4",
 		},
 		"Int64Value within other protos (set, default 0)": {
-			fieldNamesAsKeys: true,
+			options: []Option{FieldNamesAsKeys()},
 			protos: []proto.Message{
 				&pb2_latest.KnownTypes{Int64ValueField: &wrapperspb.Int64Value{}},
 				&pb2_latest.KnownTypes{Int64ValueField: &wrapperspb.Int64Value{Value: 0}},
@@ -1489,7 +1442,7 @@ func TestHashInt64Value(t *testing.T) {
 			want: "8459ba1e83e7c72aeb9dcb564daf945f42fe3c1b8837b4266fac7754657160a1",
 		},
 		"Int64Value within other protos (set, 1.0)": {
-			fieldNamesAsKeys: true,
+			options: []Option{FieldNamesAsKeys()},
 			protos: []proto.Message{
 				&pb2_latest.KnownTypes{Int64ValueField: &wrapperspb.Int64Value{Value: 1}},
 				&pb3_latest.KnownTypes{Int64ValueField: &wrapperspb.Int64Value{Value: 1}},
@@ -1523,7 +1476,7 @@ func TestHashUInt32Value(t *testing.T) {
 			want: "4cd9b7672d7fbee8fb51fb1e049f690342035f543a8efe734b7b5ffb0c154a45",
 		},
 		"UInt32Value within other protos (not set)": {
-			fieldNamesAsKeys: true,
+			options: []Option{FieldNamesAsKeys()},
 			protos: []proto.Message{
 				&pb2_latest.KnownTypes{Uint32ValueField: nil},
 				&pb3_latest.KnownTypes{Uint32ValueField: nil},
@@ -1533,7 +1486,7 @@ func TestHashUInt32Value(t *testing.T) {
 			want: "18ac3e7343f016890c510e93f935261169d9e3f565436429830faf0934f4f8e4",
 		},
 		"UInt32Value within other protos (set, default 0)": {
-			fieldNamesAsKeys: true,
+			options: []Option{FieldNamesAsKeys()},
 			protos: []proto.Message{
 				&pb2_latest.KnownTypes{Uint32ValueField: &wrapperspb.UInt32Value{}},
 				&pb2_latest.KnownTypes{Uint32ValueField: &wrapperspb.UInt32Value{Value: 0}},
@@ -1545,7 +1498,7 @@ func TestHashUInt32Value(t *testing.T) {
 			want: "7e3d86d713dec0db2344ff4eb01e40b4cc2c8393840422cf6a716f220b6f6b69",
 		},
 		"UInt32Value within other protos (set, 1.0)": {
-			fieldNamesAsKeys: true,
+			options: []Option{FieldNamesAsKeys()},
 			protos: []proto.Message{
 				&pb2_latest.KnownTypes{Uint32ValueField: &wrapperspb.UInt32Value{Value: 1}},
 				&pb3_latest.KnownTypes{Uint32ValueField: &wrapperspb.UInt32Value{Value: 1}},
@@ -1579,7 +1532,7 @@ func TestHashUInt64Value(t *testing.T) {
 			want: "4cd9b7672d7fbee8fb51fb1e049f690342035f543a8efe734b7b5ffb0c154a45",
 		},
 		"UInt64Value within other protos (not set)": {
-			fieldNamesAsKeys: true,
+			options: []Option{FieldNamesAsKeys()},
 			protos: []proto.Message{
 				&pb2_latest.KnownTypes{Uint64ValueField: nil},
 				&pb3_latest.KnownTypes{Uint64ValueField: nil},
@@ -1589,7 +1542,7 @@ func TestHashUInt64Value(t *testing.T) {
 			want: "18ac3e7343f016890c510e93f935261169d9e3f565436429830faf0934f4f8e4",
 		},
 		"UInt64Value within other protos (set, default 0)": {
-			fieldNamesAsKeys: true,
+			options: []Option{FieldNamesAsKeys()},
 			protos: []proto.Message{
 				&pb2_latest.KnownTypes{Uint64ValueField: &wrapperspb.UInt64Value{}},
 				&pb2_latest.KnownTypes{Uint64ValueField: &wrapperspb.UInt64Value{Value: 0}},
@@ -1601,7 +1554,7 @@ func TestHashUInt64Value(t *testing.T) {
 			want: "832f86706cc1b4136e174c5f0814e965388b01ecad751f1bd23c7523a684b1cc",
 		},
 		"UInt64Value within other protos (set, 1.0)": {
-			fieldNamesAsKeys: true,
+			options: []Option{FieldNamesAsKeys()},
 			protos: []proto.Message{
 				&pb2_latest.KnownTypes{Uint64ValueField: &wrapperspb.UInt64Value{Value: 1}},
 				&pb3_latest.KnownTypes{Uint64ValueField: &wrapperspb.UInt64Value{Value: 1}},
@@ -1705,10 +1658,74 @@ func TestHashStructValue(t *testing.T) {
 	}
 }
 
+func TestHashDoubleValue(t *testing.T) {
+	for name, tc := range map[string]hashTestCase{
+		"0.0": {
+			protos: []proto.Message{
+				&wrapperspb.DoubleValue{},
+				&wrapperspb.DoubleValue{Value: 0.0},
+			},
+			json: `0.0`,
+			obj:  0.0,
+			want: "60101d8c9cb988411468e38909571f357daa67bff5a7b0a3f9ae295cd4aba33d",
+		},
+		"-1.0": {
+			protos: []proto.Message{
+				&wrapperspb.DoubleValue{Value: -1.0},
+			},
+			json: `-1.0`,
+			obj:  -1.0,
+			want: "f706daa44d7e40e21ea202c36119057924bb28a49949d8ddaa9c8c3c9367e602",
+		},
+		"+1.0": {
+			protos: []proto.Message{
+				&wrapperspb.DoubleValue{Value: 1.0},
+			},
+			json: `1.0`,
+			obj:  1.0,
+			want: "f01adc732390ab024d64080e0b173f0ee3a1610efbdd4ce2a13bbf8d9b26c639",
+		},
+		"DoubleValue within other protos (not set)": {
+			options: []Option{FieldNamesAsKeys()},
+			protos: []proto.Message{
+				&pb2_latest.KnownTypes{DoubleValueField: nil},
+				&pb3_latest.KnownTypes{DoubleValueField: nil},
+			},
+			json: `{}`,
+			obj:  nil,
+			want: "18ac3e7343f016890c510e93f935261169d9e3f565436429830faf0934f4f8e4",
+		},
+		"DoubleValue within other protos (set, default 0.0)": {
+			options: []Option{FieldNamesAsKeys()},
+			protos: []proto.Message{
+				&pb2_latest.KnownTypes{DoubleValueField: &wrapperspb.DoubleValue{}},
+				&pb2_latest.KnownTypes{DoubleValueField: &wrapperspb.DoubleValue{Value: 0.0}},
+				&pb3_latest.KnownTypes{DoubleValueField: &wrapperspb.DoubleValue{}},
+				&pb3_latest.KnownTypes{DoubleValueField: &wrapperspb.DoubleValue{Value: 0.0}},
+			},
+			json: `{"double_value_field": 0.0}`,
+			obj:  map[string]float64{"double_value_field": 0.0},
+			want: "d593d09e840e41b2f5169561acf24a6b094f0dfb6850cf2a6dcea612f8990a41",
+		},
+		"DoubleValue within other protos (set, 1.0)": {
+			options: []Option{FieldNamesAsKeys()},
+			protos: []proto.Message{
+				&pb2_latest.KnownTypes{DoubleValueField: &wrapperspb.DoubleValue{Value: 1.0}},
+				&pb3_latest.KnownTypes{DoubleValueField: &wrapperspb.DoubleValue{Value: 1.0}},
+			},
+			json: `{"double_value_field": 1.0}`,
+			obj:  map[string]float64{"double_value_field": 1.0},
+			want: "20ed14f30c84aaf5066a1e419eadb0214c7ab84d522f0150a1de709bae006cc2",
+		},
+	} {
+		tc.Check(name, t)
+	}
+}
+
 func TestHashRepeatedFields(t *testing.T) {
 	for name, tc := range map[string]hashTestCase{
 		"empty lists": {
-			fieldNamesAsKeys: true,
+			options: []Option{FieldNamesAsKeys()},
 			protos: []proto.Message{
 				&pb2_latest.Repetitive{
 					BoolField:       []bool{},
@@ -1756,7 +1773,7 @@ func TestHashRepeatedFields(t *testing.T) {
 			want: "18ac3e7343f016890c510e93f935261169d9e3f565436429830faf0934f4f8e4",
 		},
 		"Lists with strings (empty)": {
-			fieldNamesAsKeys: true,
+			options: []Option{FieldNamesAsKeys()},
 			protos: []proto.Message{
 				&pb2_latest.Repetitive{StringField: []string{""}},
 				&pb3_latest.Repetitive{StringField: []string{""}},
@@ -1766,7 +1783,7 @@ func TestHashRepeatedFields(t *testing.T) {
 			want: "63e64f0ed286e0d8f30735e6646ea9ef48174c23ba09a05288b4233c6e6a9419",
 		},
 		"Lists with strings (non-empty)": {
-			fieldNamesAsKeys: true,
+			options: []Option{FieldNamesAsKeys()},
 			protos: []proto.Message{
 				&pb2_latest.Repetitive{StringField: []string{"foo"}},
 				&pb3_latest.Repetitive{StringField: []string{"foo"}},
@@ -1776,7 +1793,7 @@ func TestHashRepeatedFields(t *testing.T) {
 			want: "54c0b7c6e7c9ff0bb6076a2caeccbc96fad77f49b17b7ec9bc17dfe98a7b343e",
 		},
 		"Lists with strings (non-empty, multiple)": {
-			fieldNamesAsKeys: true,
+			options: []Option{FieldNamesAsKeys()},
 			protos: []proto.Message{
 				&pb2_latest.Repetitive{StringField: []string{"foo", "bar"}},
 				&pb3_latest.Repetitive{StringField: []string{"foo", "bar"}},
@@ -1786,7 +1803,7 @@ func TestHashRepeatedFields(t *testing.T) {
 			want: "a971a061d199ddf37a365d617f9cd4530efb15e933e0dbaf6602b2908b792056",
 		},
 		"lists with ints (0)": {
-			fieldNamesAsKeys: true,
+			options: []Option{FieldNamesAsKeys()},
 			protos: []proto.Message{
 				&pb2_latest.Repetitive{Int64Field: []int64{0}},
 				&pb3_latest.Repetitive{Int64Field: []int64{0}},
@@ -1795,7 +1812,7 @@ func TestHashRepeatedFields(t *testing.T) {
 			want: "b7e7afd1c1c7beeec4dcc0ced0ec4af2c850add686a12987e8f0b6fcb603733a",
 		},
 		"lists with ints (span)": {
-			fieldNamesAsKeys: true,
+			options: []Option{FieldNamesAsKeys()},
 			protos: []proto.Message{
 				&pb2_latest.Repetitive{Int64Field: []int64{-2, -1, 0, 1, 2}},
 				&pb3_latest.Repetitive{Int64Field: []int64{-2, -1, 0, 1, 2}},
@@ -1804,7 +1821,7 @@ func TestHashRepeatedFields(t *testing.T) {
 			want: "44e78ff73bdf5d0da5141e110b22bab240483ba17c40f83553a0e6bbfa671e22",
 		},
 		"lists with ints (large)": {
-			fieldNamesAsKeys: true,
+			options: []Option{FieldNamesAsKeys()},
 			protos: []proto.Message{
 				&pb2_latest.Repetitive{Int64Field: []int64{123456789012345, 678901234567890}},
 				&pb3_latest.Repetitive{Int64Field: []int64{123456789012345, 678901234567890}},
@@ -1813,7 +1830,7 @@ func TestHashRepeatedFields(t *testing.T) {
 			want: "b0ce1b7dfa71b33a16571fea7f3f27341bf5980b040e9d949a8019f3143ecbc7",
 		},
 		"lists with floats (0)": {
-			fieldNamesAsKeys: true,
+			options: []Option{FieldNamesAsKeys()},
 			protos: []proto.Message{
 				&pb2_latest.Repetitive{FloatField: []float32{0}},
 				&pb3_latest.Repetitive{FloatField: []float32{0}},
@@ -1823,7 +1840,7 @@ func TestHashRepeatedFields(t *testing.T) {
 			want: "63b09f87ed057a88b38e2a69b6dde327d9e2624384542853327d6b90c83046f9",
 		},
 		"lists with floats (0.0)": {
-			fieldNamesAsKeys: true,
+			options: []Option{FieldNamesAsKeys()},
 			protos: []proto.Message{
 				&pb2_latest.Repetitive{FloatField: []float32{0.0}},
 				&pb3_latest.Repetitive{FloatField: []float32{0.0}},
@@ -1833,7 +1850,7 @@ func TestHashRepeatedFields(t *testing.T) {
 			want: "63b09f87ed057a88b38e2a69b6dde327d9e2624384542853327d6b90c83046f9",
 		},
 		"lists with floats (span)": {
-			fieldNamesAsKeys: true,
+			options: []Option{FieldNamesAsKeys()},
 			protos: []proto.Message{
 				&pb2_latest.Repetitive{FloatField: []float32{-2, -1, 0, 1, 2}},
 				&pb3_latest.Repetitive{FloatField: []float32{-2, -1, 0, 1, 2}},
@@ -1843,7 +1860,7 @@ func TestHashRepeatedFields(t *testing.T) {
 			want: "68b2552f2f33b5dd38c9be0aeee127170c86d8d2b3ab7daebdc2ea124226593f",
 		},
 		"lists with floats (span 2)": {
-			fieldNamesAsKeys: true,
+			options: []Option{FieldNamesAsKeys()},
 			protos: []proto.Message{
 				&pb2_latest.Repetitive{FloatField: []float32{1, 2, 3}},
 				&pb3_latest.Repetitive{FloatField: []float32{1, 2, 3}},
@@ -1853,7 +1870,7 @@ func TestHashRepeatedFields(t *testing.T) {
 			want: "f26c1502d1f9f7bf672cf669290348f9bfdea0af48261f2822aad01927fe1749",
 		},
 		"lists with floats (span with decimals)": {
-			fieldNamesAsKeys: true,
+			options: []Option{FieldNamesAsKeys()},
 			protos: []proto.Message{
 				&pb2_latest.Repetitive{DoubleField: []float64{1.2345, -10.1234}},
 				&pb3_latest.Repetitive{DoubleField: []float64{1.2345, -10.1234}},
@@ -1863,7 +1880,7 @@ func TestHashRepeatedFields(t *testing.T) {
 			want: "2e60f6cdebfeb5e705666e9b0ff0ec652320ae27d77ad89bd4c7ddc632d0b93c",
 		},
 		"lists with floats (span with decimals 2)": {
-			fieldNamesAsKeys: true,
+			options: []Option{FieldNamesAsKeys()},
 			protos: []proto.Message{
 				&pb2_latest.Repetitive{DoubleField: []float64{1.0, 1.5, 0.0001, 1000.9999999, 2.0, -23.1234, 2.32542}},
 				&pb3_latest.Repetitive{DoubleField: []float64{1.0, 1.5, 0.0001, 1000.9999999, 2.0, -23.1234, 2.32542}},
@@ -1873,7 +1890,7 @@ func TestHashRepeatedFields(t *testing.T) {
 			want: "09a46866ca2c6d406513cd6e25feb6eda7aef4d25259f5ec16bf72f1f8bbcdac",
 		},
 		"lists with floats (span with decimals large)": {
-			fieldNamesAsKeys: true,
+			options: []Option{FieldNamesAsKeys()},
 			protos: []proto.Message{
 				&pb2_latest.Repetitive{DoubleField: []float64{123456789012345, 678901234567890}},
 				&pb3_latest.Repetitive{DoubleField: []float64{123456789012345, 678901234567890}},
@@ -2074,24 +2091,24 @@ func (ss stringList) IsValid() bool {
 }
 
 type hashTestCase struct {
-	fieldNamesAsKeys bool
-	protos           []proto.Message
-	obj              interface{}
-	json             string
-	want             string
+	options []Option
+	protos  []proto.Message
+	obj     interface{}
+	json    string
+	want    string
 }
 
 func (tc *hashTestCase) Check(name string, t *testing.T) {
 	for _, msg := range tc.protos {
 		t.Run(fmt.Sprintf("%s: %+v", name, msg), func(t *testing.T) {
-			h := hasher{fieldNamesAsKeys: tc.fieldNamesAsKeys}
+			h := NewHasher(tc.options...)
 
 			got := getHash(t, func() ([]byte, error) {
 				var prm protoreflect.Message
 				if msg != nil {
 					prm = msg.ProtoReflect()
 				}
-				return h.hashMessage(prm)
+				return h.HashProto(prm)
 			})
 
 			if diff := cmp.Diff(tc.want, got); diff != "" {

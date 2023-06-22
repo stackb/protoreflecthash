@@ -12,7 +12,6 @@ go_library(
     srcs = [
         "hasher.go",
         "hashing.go",
-        "protoreflecthash.go",
     ],
     importpath = "github.com/stackb/protoreflecthash",
     visibility = ["//visibility:public"],
@@ -26,7 +25,6 @@ go_test(
     name = "protoreflecthash_test",
     srcs = [
         "hasher_test.go",
-        "protoreflecthash_test.go",
     ],
     data = glob(["testdata/**"]),
     embed = [":protoreflecthash"],

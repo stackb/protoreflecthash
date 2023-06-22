@@ -11,17 +11,37 @@ import (
 
 const valueName = protoreflect.Name("value")
 
-type ProtoHasherOption func(*hasher)
+// Option modifies how hashes for protobufs is calculated.
+type Option func(*hasher)
 
+// ProtoHasher is an interface for hashers that are capable of returning an
+// ObjectHash for protobufs.
 type ProtoHasher interface {
+	// HashProto returns the object hash of a given protocol buffer message.
 	HashProto(msg protoreflect.Message) ([]byte, error)
 }
 
-func NewHasher(options ...ProtoHasherOption) ProtoHasher {
-	return &hasher{}
+// NewHasher creates a new ProtoHasher with the options specified in the
+// argument.
+func NewHasher(options ...Option) ProtoHasher {
+	h := &hasher{}
+	for _, opt := range options {
+		opt(h)
+	}
+	return h
 }
 
-func FieldNamesAsKeys() ProtoHasherOption {
+// MessageFullnameIdentifier is an option that uses the message descriptor
+// fullname rather than a generic map identifier when hashing messages.
+func MessageFullnameIdentifier() Option {
+	return func(h *hasher) {
+		h.messageFullnameIdentifier = true
+	}
+}
+
+// FieldNamesAsKeys is an option that uses field names for key hashing rather
+// than the field number.
+func FieldNamesAsKeys() Option {
 	return func(h *hasher) {
 		h.fieldNamesAsKeys = true
 	}
@@ -31,6 +51,9 @@ type hasher struct {
 	// Whether to use the proto field name as its key, as opposed to using the
 	// tag number as the key.
 	fieldNamesAsKeys bool
+	// Whether to use the fullname of the message descriptor rather than 'm'
+	// (mapIdentifier) for proto messages.
+	messageFullnameIdentifier bool
 }
 
 type fieldHashEntry struct {
@@ -91,9 +114,10 @@ func (h *hasher) hashMessage(msg protoreflect.Message) ([]byte, error) {
 	}
 
 	identifier := mapIdentifier
-	// if hasher.messageIdentifier != "" {
-	// 	identifier = hasher.messageIdentifier
-	// }
+	if h.messageFullnameIdentifier {
+		identifier = string(md.FullName())
+	}
+
 	return hash(identifier, buf.Bytes())
 }
 
@@ -328,7 +352,7 @@ func (h *hasher) hashGoogleProtobufAny(md protoreflect.MessageDescriptor, msg pr
 	// files := protoregistry.GlobalFiles - create option to set files explictly?
 	typeUrl := msg.Get(md.Fields().ByName("type_url")).String()
 	// TODO: lookup at a type server?
-	return nil, fmt.Errorf("unsupported type: " + typeUrl)
+	return nil, fmt.Errorf("protoreflecthash does not support hashing of Any type: " + typeUrl)
 }
 
 func (h *hasher) hashGoogleProtobufDuration(md protoreflect.MessageDescriptor, msg protoreflect.Message) ([]byte, error) {
