@@ -17,9 +17,6 @@ protoreflecthash is a re-implementation of
 <https://github.com/deepmind/objecthash-proto>.  That repo is now archived and
 was never updated for [protobuf-apiv2](https://go.dev/blog/protobuf-apiv2).
 
-This package is currently experimental; the hash values for messages will likely
-change without warning until v1.
-
 # Usage
 
 ```
@@ -36,11 +33,33 @@ import (
 func main() {
     msg := mustGetProtoMessageSomewhere()
 
-    hex, err := protoreflecthash.String(msg)
+    options := []protoreflect.Option{
+      // protoreflect.MessageFullnameIdentifier(),
+      // protoreflect.FieldNamesAsKeys(),
+    }
+    hasher := protoreflect.NewHasher(options...)
+
+    hash, err := hasher.HashProto(msg.ProtoReflect())
     if err != nil {
         panic(err.Error())
     }
-    
-    println(hex)
+
+    fmt.Printf("%x\n", hash)
 }
 ```
+
+# Background
+
+`protoreflecthash` computes the hash value for a protobuf message by taking a
+sha256 of the sum the individual component hashes of the message.  Special care
+is taken to account for various semantics of the protobuf format.
+
+This implementation passes all functional unit tests from the original library
+[deepmind/objecthash-proto](https://github.com/deepmind/objecthash-proto)
+(excluding badness detection).
+
+Open questions remain about the handling of protobufs with extension fields and
+the google.protobuf.Any type.
+
+This package is currently experimental; hash values for messages may change
+without warning until v1.
