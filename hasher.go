@@ -300,16 +300,24 @@ func (h *hasher) hashWellKnownType(md protoreflect.MessageDescriptor, msg protor
 		hash, err = h.hashGoogleProtobufFloatValue(md, msg)
 	case protoreflect.FullName("google.protobuf.Int32Value"):
 		hash, err = h.hashGoogleProtobufInt32Value(md, msg)
+	case protoreflect.FullName("google.protobuf.ListValue"):
+		hash, err = h.hashGoogleProtobufListValue(md, msg)
 	case protoreflect.FullName("google.protobuf.Int64Value"):
 		hash, err = h.hashGoogleProtobufInt64Value(md, msg)
+	case protoreflect.FullName("google.protobuf.NullValue"):
+		hash, err = h.hashGoogleProtobufNullValue(md, msg)
 	case protoreflect.FullName("google.protobuf.StringValue"):
 		hash, err = h.hashGoogleProtobufStringValue(md, msg)
+	case protoreflect.FullName("google.protobuf.Struct"):
+		hash, err = h.hashGoogleProtobufStruct(md, msg)
 	case protoreflect.FullName("google.protobuf.Timestamp"):
 		hash, err = h.hashGoogleProtobufTimestamp(md, msg)
 	case protoreflect.FullName("google.protobuf.UInt32Value"):
 		hash, err = h.hashGoogleProtobufUint32Value(md, msg)
 	case protoreflect.FullName("google.protobuf.UInt64Value"):
 		hash, err = h.hashGoogleProtobufUint64Value(md, msg)
+	case protoreflect.FullName("google.protobuf.Value"):
+		hash, err = h.hashGoogleProtobufValue(md, msg)
 	default:
 		return nil, nil, false // no special handling needed, use hashMessage
 	}
@@ -376,6 +384,95 @@ func (h *hasher) hashGoogleProtobufBoolValue(md protoreflect.MessageDescriptor, 
 
 func (h *hasher) hashGoogleProtobufStringValue(md protoreflect.MessageDescriptor, msg protoreflect.Message) ([]byte, error) {
 	return h.hashString(msg.Get(md.Fields().ByName(valueName)).String())
+}
+
+func (h *hasher) hashGoogleProtobufValue(md protoreflect.MessageDescriptor, msg protoreflect.Message) ([]byte, error) {
+	od := md.Oneofs().ByName("kind")
+	fd := msg.WhichOneof(od)
+	if fd == nil {
+		return nil, fmt.Errorf("invalid struct value: one value must be populated")
+	}
+	value := msg.Get(fd)
+
+	switch fd.Name() {
+	case "null_value":
+		return hashNil()
+	case "number_value":
+		return h.hashFloat(value.Float())
+	case "string_value":
+		return h.hashString(value.String())
+	case "bool_value":
+		return h.hashBool(value.Bool())
+	case "struct_value":
+		return h.hashGoogleProtobufStruct(value.Message().Descriptor(), value.Message())
+	case "list_value":
+		return h.hashGoogleProtobufListValue(value.Message().Descriptor(), value.Message())
+	default:
+		return nil, fmt.Errorf("unexpected struct value kind: %s", fd.Name())
+	}
+}
+
+func (h *hasher) hashGoogleProtobufListValue(md protoreflect.MessageDescriptor, msg protoreflect.Message) ([]byte, error) {
+	list := msg.Get(md.Fields().ByName("values")).List()
+
+	var buf bytes.Buffer
+	for i := 0; i < list.Len(); i++ {
+		value := list.Get(i)
+		data, err := h.hashMessage(value.Message())
+		if err != nil {
+			return nil, fmt.Errorf("hashing list item %d: %w", i, err)
+		}
+		buf.Write(data)
+	}
+
+	return hash(listIdentifier, buf.Bytes())
+}
+
+func (h *hasher) hashGoogleProtobufNullValue(md protoreflect.MessageDescriptor, msg protoreflect.Message) ([]byte, error) {
+	return hashNil()
+}
+
+func (h *hasher) hashGoogleProtobufStruct(md protoreflect.MessageDescriptor, msg protoreflect.Message) ([]byte, error) {
+	m := msg.Get(md.Fields().ByName("fields")).Map()
+	var mapHashEntries []hashMapEntry
+
+	var errValue error
+	var errKey protoreflect.MapKey
+	m.Range(func(mk protoreflect.MapKey, v protoreflect.Value) bool {
+		khash, err := h.hashString(mk.String())
+		if err != nil {
+			errKey = mk
+			errValue = err
+			return false
+		}
+
+		vhash, err := h.hashMessage(v.Message())
+		if err != nil {
+			errKey = mk
+			errValue = err
+			return false
+		}
+
+		mapHashEntries = append(mapHashEntries, hashMapEntry{
+			khash: khash,
+			vhash: vhash,
+		})
+
+		return true
+	})
+	if errValue != nil {
+		return nil, fmt.Errorf("hashing map key %v: %w", errKey, errValue)
+	}
+
+	sort.Sort(byKHash(mapHashEntries))
+
+	var buf bytes.Buffer
+	for _, e := range mapHashEntries {
+		buf.Write(e.khash[:])
+		buf.Write(e.vhash[:])
+	}
+
+	return hash(mapIdentifier, buf.Bytes())
 }
 
 type hashMapEntry struct {
