@@ -1,1 +1,6 @@
 /bazel-*
+WORKSPACE
+MODULE.bazel
+**/BUILD.bazel
+.bazelrc
+.bazelversion

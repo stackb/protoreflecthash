@@ -34,22 +34,33 @@ define BAZELRC
 build --experimental_enable_bzlmod
 endef
 
+export BAZELBUILD
+export BAZELMODULE
+export BAZELRC
+export BAZELVERSION
+export BAZELWORKSPACE
+.PHONY: bazel
+bazel:
+	echo "$$BAZELBUILD" > BUILD.bazel
+	echo "$$BAZELMODULE" > MODULE.bazel
+	echo "$$BAZELRC" > .bazelrc
+	echo "$$BAZELVERSION" > .bazelversion
+	echo "$$BAZELWORKSPACE" >> WORKSPACE
+
+	bazel build \
+		//test_protos/schema/proto3:proto3_go_proto \
+		//test_protos/schema/proto2:proto2_go_proto \
+		//test_protos:protoset
+
+	cp -f bazel-bin/test_protos/schema/proto3/proto3_go_proto_/github.com/stackb/protoreflecthash/test_protos/generated/latest/proto3/*.pb.go \
+		test_protos/generated/latest/proto3
+
+	cp -f bazel-bin/test_protos/schema/proto2/proto2_go_proto_/github.com/stackb/protoreflecthash/test_protos/generated/latest/proto2/*.pb.go \
+		test_protos/generated/latest/proto2
+
+	cp -f bazel-bin/test_protos/protoset.pb \
+		testdata/	
+
 .PHONY: test
 test:
 	go test github.com/stackb/protoreflecthash
-
-.PHONY: test_protoset
-test_protoset:
-	bazel build //test_protos:protoset
-	cp -f bazel-bin/test_protos/protoset.pb testdata/
-
-.PHONY: bazel
-bazel:
-	echo "$$BAZELWORKSPACE" > WORKSPACE
-	echo "$$BAZELMODULE" > MODULE.bazel
-	echo "$$BAZELBUILD" > BUILD.bazel
-	echo "$$BAZELVERSION" > .bazelversion
-	echo "$$BAZELRC" > .bazelrc
-	# bazel build //test_protos/schema/proto3:proto3_go_proto //test_protos/schema/proto2:proto2_go_proto
-	# cp -f bazel-bin/test_protos/schema/proto3/proto3_go_proto_/github.com/stackb/protoreflecthash/test_protos/generated/latest/proto3/*.pb.go test_protos/generated/latest/proto3
-	# cp -f bazel-bin/test_protos/schema/proto2/proto2_go_proto_/github.com/stackb/protoreflecthash/test_protos/generated/latest/proto2/*.pb.go test_protos/generated/latest/proto2
