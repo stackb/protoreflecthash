@@ -17,7 +17,9 @@ import (
 	"google.golang.org/protobuf/reflect/protoregistry"
 	"google.golang.org/protobuf/types/descriptorpb"
 	"google.golang.org/protobuf/types/dynamicpb"
+	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	pb2_latest "github.com/stackb/protoreflecthash/test_protos/generated/latest/proto2"
 	pb3_latest "github.com/stackb/protoreflecthash/test_protos/generated/latest/proto3"
@@ -111,6 +113,42 @@ func TestHashInt(t *testing.T) {
 
 			got := getHash(t, func() ([]byte, error) {
 				return h.hashInt(tc.value)
+			})
+
+			if diff := cmp.Diff(tc.want, got); diff != "" {
+				t.Errorf("protohash (-want +got):\n%s", diff)
+			}
+
+			if diff := cmp.Diff(tc.want, objectHash(t, tc.value)); diff != "" {
+				t.Errorf("objecthash (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestHashUint(t *testing.T) {
+	for name, tc := range map[string]struct {
+		value uint64
+		want  string
+	}{
+		"zero": {
+			value: 0,
+			want:  "a4e167a76a05add8a8654c169b07b0447a916035aef602df103e8ae0fe2ff390",
+		},
+		"positive": {
+			value: 1,
+			want:  "4cd9b7672d7fbee8fb51fb1e049f690342035f543a8efe734b7b5ffb0c154a45",
+		},
+		"max": {
+			value: math.MaxUint,
+			want:  "5b50a7751238c21772625d9807fc62e2d25ae5bd092d2018f0834d871c5db302",
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			h := hasher{}
+
+			got := getHash(t, func() ([]byte, error) {
+				return h.hashUint(tc.value)
 			})
 
 			if diff := cmp.Diff(tc.want, got); diff != "" {
@@ -982,7 +1020,6 @@ func TestHashOtherTypes(t *testing.T) {
 	}
 }
 
-// TestHashOtherTypes performs tests on types that do not have their own test file.
 func TestHashTimestamp(t *testing.T) {
 	for name, tc := range map[string]hashTestCase{
 		"Empty/Zero Timestamps": {
@@ -1034,6 +1071,543 @@ func TestHashTimestamp(t *testing.T) {
 			// JSON treats all numbers as floats, so it is not possible to have an equivalent JSON string.
 			obj:  map[string][]int64{"timestamp_field": {1525450021, 123456789}},
 			want: "cf99942e3f8d1212f4ce263e206d64e29525b97b91368e71f9595bce83ac6a3e",
+		},
+	} {
+		tc.Check(name, t)
+	}
+}
+
+func TestHashDuration(t *testing.T) {
+	for name, tc := range map[string]hashTestCase{
+		"Empty/Zero Duration": {
+			// The semantics of the Duration object imply that the distinction between
+			// unset and zero happen at the message level, rather than the field level.
+			//
+			// As a result, an unset timestamp is one where the proto itself is nil,
+			// while an explicitly set timestamp with unset fields is considered to be
+			// explicitly set to 0.
+			//
+			// This is unlike normal proto3 messages, where unset/zero fields must be
+			// considered to be unset, because they're indistinguishable in the general
+			// case.
+			protos: []proto.Message{
+				&durationpb.Duration{},
+				&durationpb.Duration{Seconds: 0, Nanos: 0},
+			},
+			// JSON treats all numbers as floats, so it is not possible to have an equivalent JSON string.
+			obj:  []int64{0, 0},
+			want: "3a82b649344529f03f52c1833f5aecc488a53b31461a1f54c305d149b12b8f53",
+		},
+		"Normal Duration": {
+			protos: []proto.Message{
+				&durationpb.Duration{Seconds: 1525450021, Nanos: 123456789},
+			},
+			// JSON treats all numbers as floats, so it is not possible to have an equivalent JSON string.
+			obj:  []int64{1525450021, 123456789},
+			want: "1fd36770664df599ad44e4e4f06b1fad6ef7a4b3f316d79ca11bea668032a199",
+		},
+		"Durations within other protos (zero)": {
+			fieldNamesAsKeys: true,
+			protos: []proto.Message{
+				&pb2_latest.KnownTypes{DurationField: &durationpb.Duration{}},
+				&pb2_latest.KnownTypes{DurationField: &durationpb.Duration{Seconds: 0, Nanos: 0}},
+
+				&pb3_latest.KnownTypes{DurationField: &durationpb.Duration{}},
+				&pb3_latest.KnownTypes{DurationField: &durationpb.Duration{Seconds: 0, Nanos: 0}},
+			},
+			// JSON treats all numbers as floats, so it is not possible to have an equivalent JSON string.
+			obj:  map[string][]int64{"duration_field": {0, 0}},
+			want: "80668dc83d8e5c0c9e24afba293e69cb1ce697772521f7a8ea3afc20a6dd617a",
+		},
+		"Durations within other protos (non-zero)": {
+			fieldNamesAsKeys: true,
+			protos: []proto.Message{
+				&pb2_latest.KnownTypes{DurationField: &durationpb.Duration{Seconds: 1525450021, Nanos: 123456789}},
+				&pb3_latest.KnownTypes{DurationField: &durationpb.Duration{Seconds: 1525450021, Nanos: 123456789}},
+			},
+			// JSON treats all numbers as floats, so it is not possible to have an equivalent JSON string.
+			obj:  map[string][]int64{"duration_field": {1525450021, 123456789}},
+			want: "df5f2f19e08ba1027e491117ac0b5269d66439b0326a05de356f2840ba8354c1",
+		},
+	} {
+		tc.Check(name, t)
+	}
+}
+
+func TestHashBoolValue(t *testing.T) {
+	for name, tc := range map[string]hashTestCase{
+		"false": {
+			protos: []proto.Message{
+				&wrapperspb.BoolValue{},
+				&wrapperspb.BoolValue{Value: false},
+			},
+			json: `false`,
+			obj:  false,
+			want: "c02c0b965e023abee808f2b548d8d5193a8b5229be6f3121a6f16e2d41a449b3",
+		},
+		"true": {
+			protos: []proto.Message{
+				&wrapperspb.BoolValue{Value: true},
+			},
+			json: `true`,
+			obj:  true,
+			want: "7dc96f776c8423e57a2785489a3f9c43fb6e756876d6ad9a9cac4aa4e72ec193",
+		},
+		"BoolValue within other protos (not set)": {
+			fieldNamesAsKeys: true,
+			protos: []proto.Message{
+				&pb2_latest.KnownTypes{BoolValueField: nil},
+				&pb3_latest.KnownTypes{BoolValueField: nil},
+			},
+			json: `{}`,
+			obj:  nil,
+			want: "18ac3e7343f016890c510e93f935261169d9e3f565436429830faf0934f4f8e4",
+		},
+		"BoolValue within other protos (set, default false)": {
+			fieldNamesAsKeys: true,
+			protos: []proto.Message{
+				&pb2_latest.KnownTypes{BoolValueField: &wrapperspb.BoolValue{}},
+				&pb2_latest.KnownTypes{BoolValueField: &wrapperspb.BoolValue{Value: false}},
+				&pb3_latest.KnownTypes{BoolValueField: &wrapperspb.BoolValue{}},
+				&pb3_latest.KnownTypes{BoolValueField: &wrapperspb.BoolValue{Value: false}},
+			},
+			json: `{"bool_value_field": false}`,
+			obj:  map[string]bool{"bool_value_field": false},
+			want: "8ec24416eca90851428f5b63b7529d2ea7d24fe0e9b3ca11ea2ee851d0ce2280",
+		},
+		"BoolValue within other protos (set, true)": {
+			fieldNamesAsKeys: true,
+			protos: []proto.Message{
+				&pb2_latest.KnownTypes{BoolValueField: &wrapperspb.BoolValue{Value: true}},
+				&pb3_latest.KnownTypes{BoolValueField: &wrapperspb.BoolValue{Value: true}},
+			},
+			json: `{"bool_value_field": true}`,
+			obj:  map[string]bool{"bool_value_field": true},
+			want: "3363c4b1d91d9469bbcca6c255245fba3fdc340722bd0b69c3d1a3dc84ce0d58",
+		},
+	} {
+		tc.Check(name, t)
+	}
+}
+
+func TestHashFloatValue(t *testing.T) {
+	for name, tc := range map[string]hashTestCase{
+		"0.0": {
+			protos: []proto.Message{
+				&wrapperspb.FloatValue{},
+				&wrapperspb.FloatValue{Value: 0.0},
+			},
+			json: `0.0`,
+			obj:  0.0,
+			want: "60101d8c9cb988411468e38909571f357daa67bff5a7b0a3f9ae295cd4aba33d",
+		},
+		"-1.0": {
+			protos: []proto.Message{
+				&wrapperspb.FloatValue{Value: -1.0},
+			},
+			json: `-1.0`,
+			obj:  -1.0,
+			want: "f706daa44d7e40e21ea202c36119057924bb28a49949d8ddaa9c8c3c9367e602",
+		},
+		"+1.0": {
+			protos: []proto.Message{
+				&wrapperspb.FloatValue{Value: 1.0},
+			},
+			json: `1.0`,
+			obj:  1.0,
+			want: "f01adc732390ab024d64080e0b173f0ee3a1610efbdd4ce2a13bbf8d9b26c639",
+		},
+		"FloatValue within other protos (not set)": {
+			fieldNamesAsKeys: true,
+			protos: []proto.Message{
+				&pb2_latest.KnownTypes{FloatValueField: nil},
+				&pb3_latest.KnownTypes{FloatValueField: nil},
+			},
+			json: `{}`,
+			obj:  nil,
+			want: "18ac3e7343f016890c510e93f935261169d9e3f565436429830faf0934f4f8e4",
+		},
+		"FloatValue within other protos (set, default 0.0)": {
+			fieldNamesAsKeys: true,
+			protos: []proto.Message{
+				&pb2_latest.KnownTypes{FloatValueField: &wrapperspb.FloatValue{}},
+				&pb2_latest.KnownTypes{FloatValueField: &wrapperspb.FloatValue{Value: 0.0}},
+				&pb3_latest.KnownTypes{FloatValueField: &wrapperspb.FloatValue{}},
+				&pb3_latest.KnownTypes{FloatValueField: &wrapperspb.FloatValue{Value: 0.0}},
+			},
+			json: `{"float_value_field": 0.0}`,
+			obj:  map[string]float32{"float_value_field": 0.0},
+			want: "75085520c0294c8467895b2bd9939cf4a6373629f95f155eb3c755c7debb326d",
+		},
+		"FloatValue within other protos (set, 1.0)": {
+			fieldNamesAsKeys: true,
+			protos: []proto.Message{
+				&pb2_latest.KnownTypes{FloatValueField: &wrapperspb.FloatValue{Value: 1.0}},
+				&pb3_latest.KnownTypes{FloatValueField: &wrapperspb.FloatValue{Value: 1.0}},
+			},
+			json: `{"float_value_field": 1.0}`,
+			obj:  map[string]float32{"float_value_field": 1.0},
+			want: "a503b683c8668908da9abdc3ac2683fc5ee8c1aac3c6ccab020005b30e76ac9f",
+		},
+	} {
+		tc.Check(name, t)
+	}
+}
+
+func TestHashDoubleValue(t *testing.T) {
+	for name, tc := range map[string]hashTestCase{
+		"0.0": {
+			protos: []proto.Message{
+				&wrapperspb.DoubleValue{},
+				&wrapperspb.DoubleValue{Value: 0.0},
+			},
+			json: `0.0`,
+			obj:  0.0,
+			want: "60101d8c9cb988411468e38909571f357daa67bff5a7b0a3f9ae295cd4aba33d",
+		},
+		"-1.0": {
+			protos: []proto.Message{
+				&wrapperspb.DoubleValue{Value: -1.0},
+			},
+			json: `-1.0`,
+			obj:  -1.0,
+			want: "f706daa44d7e40e21ea202c36119057924bb28a49949d8ddaa9c8c3c9367e602",
+		},
+		"+1.0": {
+			protos: []proto.Message{
+				&wrapperspb.DoubleValue{Value: 1.0},
+			},
+			json: `1.0`,
+			obj:  1.0,
+			want: "f01adc732390ab024d64080e0b173f0ee3a1610efbdd4ce2a13bbf8d9b26c639",
+		},
+		"DoubleValue within other protos (not set)": {
+			fieldNamesAsKeys: true,
+			protos: []proto.Message{
+				&pb2_latest.KnownTypes{DoubleValueField: nil},
+				&pb3_latest.KnownTypes{DoubleValueField: nil},
+			},
+			json: `{}`,
+			obj:  nil,
+			want: "18ac3e7343f016890c510e93f935261169d9e3f565436429830faf0934f4f8e4",
+		},
+		"DoubleValue within other protos (set, default 0.0)": {
+			fieldNamesAsKeys: true,
+			protos: []proto.Message{
+				&pb2_latest.KnownTypes{DoubleValueField: &wrapperspb.DoubleValue{}},
+				&pb2_latest.KnownTypes{DoubleValueField: &wrapperspb.DoubleValue{Value: 0.0}},
+				&pb3_latest.KnownTypes{DoubleValueField: &wrapperspb.DoubleValue{}},
+				&pb3_latest.KnownTypes{DoubleValueField: &wrapperspb.DoubleValue{Value: 0.0}},
+			},
+			json: `{"double_value_field": 0.0}`,
+			obj:  map[string]float64{"double_value_field": 0.0},
+			want: "d593d09e840e41b2f5169561acf24a6b094f0dfb6850cf2a6dcea612f8990a41",
+		},
+		"DoubleValue within other protos (set, 1.0)": {
+			fieldNamesAsKeys: true,
+			protos: []proto.Message{
+				&pb2_latest.KnownTypes{DoubleValueField: &wrapperspb.DoubleValue{Value: 1.0}},
+				&pb3_latest.KnownTypes{DoubleValueField: &wrapperspb.DoubleValue{Value: 1.0}},
+			},
+			json: `{"double_value_field": 1.0}`,
+			obj:  map[string]float64{"double_value_field": 1.0},
+			want: "20ed14f30c84aaf5066a1e419eadb0214c7ab84d522f0150a1de709bae006cc2",
+		},
+	} {
+		tc.Check(name, t)
+	}
+}
+
+func TestHashStringValue(t *testing.T) {
+	for name, tc := range map[string]hashTestCase{
+		"empty": {
+			protos: []proto.Message{
+				&wrapperspb.StringValue{},
+				&wrapperspb.StringValue{Value: ""},
+			},
+			json: `""`,
+			obj:  "",
+			want: "0bfe935e70c321c7ca3afc75ce0d0ca2f98b5422e008bb31c00c6d7f1f1c0ad6",
+		},
+		"你好": {
+			protos: []proto.Message{
+				&wrapperspb.StringValue{Value: "你好"},
+			},
+			json: `"你好"`,
+			obj:  "你好",
+			want: "462b68f5e3d75aed5f02841b4ffee068d4cf33ce1b155105b71a9e5f358026df",
+		},
+		"StringValue within other protos (not set)": {
+			fieldNamesAsKeys: true,
+			protos: []proto.Message{
+				&pb2_latest.KnownTypes{StringValueField: nil},
+				&pb3_latest.KnownTypes{StringValueField: nil},
+			},
+			json: `{}`,
+			obj:  nil,
+			want: "18ac3e7343f016890c510e93f935261169d9e3f565436429830faf0934f4f8e4",
+		},
+		"StringValue within other protos (set, default empty)": {
+			fieldNamesAsKeys: true,
+			protos: []proto.Message{
+				&pb2_latest.KnownTypes{StringValueField: &wrapperspb.StringValue{}},
+				&pb2_latest.KnownTypes{StringValueField: &wrapperspb.StringValue{Value: ""}},
+				&pb3_latest.KnownTypes{StringValueField: &wrapperspb.StringValue{}},
+				&pb3_latest.KnownTypes{StringValueField: &wrapperspb.StringValue{Value: ""}},
+			},
+			json: `{"string_value_field": ""}`,
+			obj:  map[string]string{"string_value_field": ""},
+			want: "2ce75d087e557a68b232652d48e6aac5f3fc457c597a0ed07a1b63a4c2d16039",
+		},
+		"StringValue within other protos (set, nonempty)": {
+			fieldNamesAsKeys: true,
+			protos: []proto.Message{
+				&pb2_latest.KnownTypes{StringValueField: &wrapperspb.StringValue{Value: "bob"}},
+				&pb3_latest.KnownTypes{StringValueField: &wrapperspb.StringValue{Value: "bob"}},
+			},
+			json: `{"string_value_field": "bob"}`,
+			obj:  map[string]string{"string_value_field": "bob"},
+			want: "2ca37671e89e4a192caac37288ec665498eb7b2917b7a7354a23225a35765588",
+		},
+	} {
+		tc.Check(name, t)
+	}
+}
+
+func TestHashInt32Value(t *testing.T) {
+	for name, tc := range map[string]hashTestCase{
+		"0": {
+			protos: []proto.Message{
+				&wrapperspb.Int32Value{},
+				&wrapperspb.Int32Value{Value: 0},
+			},
+			// JSON skipped - represents numbers as floats
+			obj:  0,
+			want: "a4e167a76a05add8a8654c169b07b0447a916035aef602df103e8ae0fe2ff390",
+		},
+		"-1": {
+			protos: []proto.Message{
+				&wrapperspb.Int32Value{Value: -1},
+			},
+			// JSON skipped - represents numbers as floats
+			obj:  -1,
+			want: "f105b11df43d5d321f5c773ef904af979024887b4d2b0fab699387f59e2ff01e",
+		},
+		"+1": {
+			protos: []proto.Message{
+				&wrapperspb.Int32Value{Value: 1},
+			},
+			// JSON skipped - represents numbers as floats
+			obj:  1,
+			want: "4cd9b7672d7fbee8fb51fb1e049f690342035f543a8efe734b7b5ffb0c154a45",
+		},
+		"Int32Value within other protos (not set)": {
+			fieldNamesAsKeys: true,
+			protos: []proto.Message{
+				&pb2_latest.KnownTypes{Int32ValueField: nil},
+				&pb3_latest.KnownTypes{Int32ValueField: nil},
+			},
+			json: `{}`,
+			obj:  nil,
+			want: "18ac3e7343f016890c510e93f935261169d9e3f565436429830faf0934f4f8e4",
+		},
+		"Int32Value within other protos (set, default 0)": {
+			fieldNamesAsKeys: true,
+			protos: []proto.Message{
+				&pb2_latest.KnownTypes{Int32ValueField: &wrapperspb.Int32Value{}},
+				&pb2_latest.KnownTypes{Int32ValueField: &wrapperspb.Int32Value{Value: 0}},
+				&pb3_latest.KnownTypes{Int32ValueField: &wrapperspb.Int32Value{}},
+				&pb3_latest.KnownTypes{Int32ValueField: &wrapperspb.Int32Value{Value: 0}},
+			},
+			// JSON skipped - represents numbers as floats
+			obj:  map[string]int32{"int32_value_field": 0},
+			want: "f45c9b89d9a758f70fee58bad947bca07bd20a31119d927588e7bb11ef17180d",
+		},
+		"Int32Value within other protos (set, 1.0)": {
+			fieldNamesAsKeys: true,
+			protos: []proto.Message{
+				&pb2_latest.KnownTypes{Int32ValueField: &wrapperspb.Int32Value{Value: 1}},
+				&pb3_latest.KnownTypes{Int32ValueField: &wrapperspb.Int32Value{Value: 1}},
+			},
+			// JSON skipped - represents numbers as floats
+			obj:  map[string]int32{"int32_value_field": 1},
+			want: "95701cadfe534df4a6f4765625b01a45207a2a9b6479211361a935e33c565195",
+		},
+	} {
+		tc.Check(name, t)
+	}
+}
+
+func TestHashInt64Value(t *testing.T) {
+	for name, tc := range map[string]hashTestCase{
+		"0": {
+			protos: []proto.Message{
+				&wrapperspb.Int64Value{},
+				&wrapperspb.Int64Value{Value: 0},
+			},
+			// JSON skipped - represents numbers as floats
+			obj:  0,
+			want: "a4e167a76a05add8a8654c169b07b0447a916035aef602df103e8ae0fe2ff390",
+		},
+		"-1": {
+			protos: []proto.Message{
+				&wrapperspb.Int64Value{Value: -1},
+			},
+			// JSON skipped - represents numbers as floats
+			obj:  -1,
+			want: "f105b11df43d5d321f5c773ef904af979024887b4d2b0fab699387f59e2ff01e",
+		},
+		"+1": {
+			protos: []proto.Message{
+				&wrapperspb.Int64Value{Value: 1},
+			},
+			// JSON skipped - represents numbers as floats
+			obj:  1,
+			want: "4cd9b7672d7fbee8fb51fb1e049f690342035f543a8efe734b7b5ffb0c154a45",
+		},
+		"Int64Value within other protos (not set)": {
+			fieldNamesAsKeys: true,
+			protos: []proto.Message{
+				&pb2_latest.KnownTypes{Int64ValueField: nil},
+				&pb3_latest.KnownTypes{Int64ValueField: nil},
+			},
+			json: `{}`,
+			obj:  nil,
+			want: "18ac3e7343f016890c510e93f935261169d9e3f565436429830faf0934f4f8e4",
+		},
+		"Int64Value within other protos (set, default 0)": {
+			fieldNamesAsKeys: true,
+			protos: []proto.Message{
+				&pb2_latest.KnownTypes{Int64ValueField: &wrapperspb.Int64Value{}},
+				&pb2_latest.KnownTypes{Int64ValueField: &wrapperspb.Int64Value{Value: 0}},
+				&pb3_latest.KnownTypes{Int64ValueField: &wrapperspb.Int64Value{}},
+				&pb3_latest.KnownTypes{Int64ValueField: &wrapperspb.Int64Value{Value: 0}},
+			},
+			// JSON skipped - represents numbers as floats
+			obj:  map[string]int64{"int64_value_field": 0},
+			want: "8459ba1e83e7c72aeb9dcb564daf945f42fe3c1b8837b4266fac7754657160a1",
+		},
+		"Int64Value within other protos (set, 1.0)": {
+			fieldNamesAsKeys: true,
+			protos: []proto.Message{
+				&pb2_latest.KnownTypes{Int64ValueField: &wrapperspb.Int64Value{Value: 1}},
+				&pb3_latest.KnownTypes{Int64ValueField: &wrapperspb.Int64Value{Value: 1}},
+			},
+			// JSON skipped - represents numbers as floats
+			obj:  map[string]int64{"int64_value_field": 1},
+			want: "5b7702e61c5d070be2e42f01588be080635bf1244e232aa12107602eb9b2594d",
+		},
+	} {
+		tc.Check(name, t)
+	}
+}
+
+func TestHashUInt32Value(t *testing.T) {
+	for name, tc := range map[string]hashTestCase{
+		"0": {
+			protos: []proto.Message{
+				&wrapperspb.UInt32Value{},
+				&wrapperspb.UInt32Value{Value: 0},
+			},
+			// JSON skipped - represents numbers as floats
+			obj:  uint32(0),
+			want: "a4e167a76a05add8a8654c169b07b0447a916035aef602df103e8ae0fe2ff390",
+		},
+		"1": {
+			protos: []proto.Message{
+				&wrapperspb.UInt32Value{Value: 1},
+			},
+			// JSON skipped - represents numbers as floats
+			obj:  uint32(1),
+			want: "4cd9b7672d7fbee8fb51fb1e049f690342035f543a8efe734b7b5ffb0c154a45",
+		},
+		"UInt32Value within other protos (not set)": {
+			fieldNamesAsKeys: true,
+			protos: []proto.Message{
+				&pb2_latest.KnownTypes{Uint32ValueField: nil},
+				&pb3_latest.KnownTypes{Uint32ValueField: nil},
+			},
+			json: `{}`,
+			obj:  nil,
+			want: "18ac3e7343f016890c510e93f935261169d9e3f565436429830faf0934f4f8e4",
+		},
+		"UInt32Value within other protos (set, default 0)": {
+			fieldNamesAsKeys: true,
+			protos: []proto.Message{
+				&pb2_latest.KnownTypes{Uint32ValueField: &wrapperspb.UInt32Value{}},
+				&pb2_latest.KnownTypes{Uint32ValueField: &wrapperspb.UInt32Value{Value: 0}},
+				&pb3_latest.KnownTypes{Uint32ValueField: &wrapperspb.UInt32Value{}},
+				&pb3_latest.KnownTypes{Uint32ValueField: &wrapperspb.UInt32Value{Value: 0}},
+			},
+			// JSON skipped - represents numbers as floats
+			obj:  map[string]int32{"uint32_value_field": 0},
+			want: "7e3d86d713dec0db2344ff4eb01e40b4cc2c8393840422cf6a716f220b6f6b69",
+		},
+		"UInt32Value within other protos (set, 1.0)": {
+			fieldNamesAsKeys: true,
+			protos: []proto.Message{
+				&pb2_latest.KnownTypes{Uint32ValueField: &wrapperspb.UInt32Value{Value: 1}},
+				&pb3_latest.KnownTypes{Uint32ValueField: &wrapperspb.UInt32Value{Value: 1}},
+			},
+			// JSON skipped - represents numbers as floats
+			obj:  map[string]int32{"uint32_value_field": 1},
+			want: "8b68ebe1ad0456fba3267c950eade1e3d59b1b028af6686bae8d846d911e1b24",
+		},
+	} {
+		tc.Check(name, t)
+	}
+}
+
+func TestHashUInt64Value(t *testing.T) {
+	for name, tc := range map[string]hashTestCase{
+		"0": {
+			protos: []proto.Message{
+				&wrapperspb.UInt64Value{},
+				&wrapperspb.UInt64Value{Value: 0},
+			},
+			// JSON skipped - represents numbers as floats
+			obj:  uint64(0),
+			want: "a4e167a76a05add8a8654c169b07b0447a916035aef602df103e8ae0fe2ff390",
+		},
+		"1": {
+			protos: []proto.Message{
+				&wrapperspb.UInt64Value{Value: 1},
+			},
+			// JSON skipped - represents numbers as floats
+			obj:  uint64(1),
+			want: "4cd9b7672d7fbee8fb51fb1e049f690342035f543a8efe734b7b5ffb0c154a45",
+		},
+		"UInt64Value within other protos (not set)": {
+			fieldNamesAsKeys: true,
+			protos: []proto.Message{
+				&pb2_latest.KnownTypes{Uint64ValueField: nil},
+				&pb3_latest.KnownTypes{Uint64ValueField: nil},
+			},
+			json: `{}`,
+			obj:  nil,
+			want: "18ac3e7343f016890c510e93f935261169d9e3f565436429830faf0934f4f8e4",
+		},
+		"UInt64Value within other protos (set, default 0)": {
+			fieldNamesAsKeys: true,
+			protos: []proto.Message{
+				&pb2_latest.KnownTypes{Uint64ValueField: &wrapperspb.UInt64Value{}},
+				&pb2_latest.KnownTypes{Uint64ValueField: &wrapperspb.UInt64Value{Value: 0}},
+				&pb3_latest.KnownTypes{Uint64ValueField: &wrapperspb.UInt64Value{}},
+				&pb3_latest.KnownTypes{Uint64ValueField: &wrapperspb.UInt64Value{Value: 0}},
+			},
+			// JSON skipped - represents numbers as floats
+			obj:  map[string]int64{"uint64_value_field": 0},
+			want: "832f86706cc1b4136e174c5f0814e965388b01ecad751f1bd23c7523a684b1cc",
+		},
+		"UInt64Value within other protos (set, 1.0)": {
+			fieldNamesAsKeys: true,
+			protos: []proto.Message{
+				&pb2_latest.KnownTypes{Uint64ValueField: &wrapperspb.UInt64Value{Value: 1}},
+				&pb3_latest.KnownTypes{Uint64ValueField: &wrapperspb.UInt64Value{Value: 1}},
+			},
+			// JSON skipped - represents numbers as floats
+			obj:  map[string]int64{"uint64_value_field": 1},
+			want: "65ffdca739a0382cb77f89fbcfa681bc6214d70789c094bedf827b30b7283c08",
 		},
 	} {
 		tc.Check(name, t)
@@ -1419,7 +1993,7 @@ type hashTestCase struct {
 
 func (tc *hashTestCase) Check(name string, t *testing.T) {
 	for _, msg := range tc.protos {
-		t.Run(fmt.Sprintf("%+v", msg), func(t *testing.T) {
+		t.Run(fmt.Sprintf("%s: %+v", name, msg), func(t *testing.T) {
 			h := hasher{fieldNamesAsKeys: tc.fieldNamesAsKeys}
 
 			got := getHash(t, func() ([]byte, error) {

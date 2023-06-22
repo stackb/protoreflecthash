@@ -286,29 +286,30 @@ func (h *hasher) hashMap(kd, fd protoreflect.FieldDescriptor, m protoreflect.Map
 }
 
 func (h *hasher) hashWellKnownType(md protoreflect.MessageDescriptor, msg protoreflect.Message) (hash []byte, err error, ok bool) {
-	switch md.FullName() {
+	fullName := md.FullName()
+	switch fullName {
 	case protoreflect.FullName("google.protobuf.Any"):
 		hash, err = h.hashGoogleProtobufAny(md, msg)
-	case protoreflect.FullName("google.protobuf.Duration"):
-		hash, err = h.hashGoogleProtobufDuration(md, msg)
-	case protoreflect.FullName("google.protobuf.Timestamp"):
-		hash, err = h.hashGoogleProtobufTimestamp(md, msg)
-	case protoreflect.FullName("google.protobuf.DoubleValue"):
-		hash, err = h.hashGoogleProtobufDoubleValue(md, msg)
-	case protoreflect.FullName("google.protobuf.FloatValue"):
-		hash, err = h.hashGoogleProtobufFloatValue(md, msg)
-	case protoreflect.FullName("google.protobuf.Int64Value"):
-		hash, err = h.hashGoogleProtobufInt64Value(md, msg)
-	case protoreflect.FullName("google.protobuf.Uint64Value"):
-		hash, err = h.hashGoogleProtobufUint64Value(md, msg)
-	case protoreflect.FullName("google.protobuf.Int32Value"):
-		hash, err = h.hashGoogleProtobufInt32Value(md, msg)
-	case protoreflect.FullName("google.protobuf.Uint32Value"):
-		hash, err = h.hashGoogleProtobufUint32Value(md, msg)
 	case protoreflect.FullName("google.protobuf.BoolValue"):
 		hash, err = h.hashGoogleProtobufBoolValue(md, msg)
+	case protoreflect.FullName("google.protobuf.DoubleValue"):
+		hash, err = h.hashGoogleProtobufDoubleValue(md, msg)
+	case protoreflect.FullName("google.protobuf.Duration"):
+		hash, err = h.hashGoogleProtobufDuration(md, msg)
+	case protoreflect.FullName("google.protobuf.FloatValue"):
+		hash, err = h.hashGoogleProtobufFloatValue(md, msg)
+	case protoreflect.FullName("google.protobuf.Int32Value"):
+		hash, err = h.hashGoogleProtobufInt32Value(md, msg)
+	case protoreflect.FullName("google.protobuf.Int64Value"):
+		hash, err = h.hashGoogleProtobufInt64Value(md, msg)
 	case protoreflect.FullName("google.protobuf.StringValue"):
 		hash, err = h.hashGoogleProtobufStringValue(md, msg)
+	case protoreflect.FullName("google.protobuf.Timestamp"):
+		hash, err = h.hashGoogleProtobufTimestamp(md, msg)
+	case protoreflect.FullName("google.protobuf.UInt32Value"):
+		hash, err = h.hashGoogleProtobufUint32Value(md, msg)
+	case protoreflect.FullName("google.protobuf.UInt64Value"):
+		hash, err = h.hashGoogleProtobufUint64Value(md, msg)
 	default:
 		return nil, nil, false // no special handling needed, use hashMessage
 	}
@@ -353,19 +354,19 @@ func (h *hasher) hashGoogleProtobufFloatValue(md protoreflect.MessageDescriptor,
 	return h.hashFloat(msg.Get(md.Fields().ByName(valueName)).Float())
 }
 
-func (h *hasher) hashGoogleProtobufInt64Value(md protoreflect.MessageDescriptor, msg protoreflect.Message) ([]byte, error) {
-	return h.hashInt(msg.Get(md.Fields().ByName(valueName)).Int())
-}
-
-func (h *hasher) hashGoogleProtobufUint64Value(md protoreflect.MessageDescriptor, msg protoreflect.Message) ([]byte, error) {
-	return h.hashUint(msg.Get(md.Fields().ByName(valueName)).Uint())
-}
-
 func (h *hasher) hashGoogleProtobufInt32Value(md protoreflect.MessageDescriptor, msg protoreflect.Message) ([]byte, error) {
 	return h.hashInt(msg.Get(md.Fields().ByName(valueName)).Int())
 }
 
+func (h *hasher) hashGoogleProtobufInt64Value(md protoreflect.MessageDescriptor, msg protoreflect.Message) ([]byte, error) {
+	return h.hashInt(msg.Get(md.Fields().ByName(valueName)).Int())
+}
+
 func (h *hasher) hashGoogleProtobufUint32Value(md protoreflect.MessageDescriptor, msg protoreflect.Message) ([]byte, error) {
+	return h.hashUint(msg.Get(md.Fields().ByName(valueName)).Uint())
+}
+
+func (h *hasher) hashGoogleProtobufUint64Value(md protoreflect.MessageDescriptor, msg protoreflect.Message) ([]byte, error) {
 	return h.hashUint(msg.Get(md.Fields().ByName(valueName)).Uint())
 }
 
