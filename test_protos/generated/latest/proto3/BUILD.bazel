@@ -3,16 +3,24 @@ load("@rules_go//go:def.bzl", "go_library")
 go_library(
     name = "proto3",
     srcs = [
+        "bad.pb.go",
         "floats.pb.go",
         "integers.pb.go",
         "maps.pb.go",
+        "people.pb.go",
         "planets.pb.go",
         "simple.pb.go",
+        "well_known_types.pb.go",
     ],
     importpath = "github.com/stackb/protoreflecthash/test_protos/generated/latest/proto3",
     visibility = ["//visibility:public"],
     deps = [
         "@org_golang_google_protobuf//reflect/protoreflect",
         "@org_golang_google_protobuf//runtime/protoimpl",
+        "@org_golang_google_protobuf//types/known/anypb",
+        "@org_golang_google_protobuf//types/known/durationpb",
+        "@org_golang_google_protobuf//types/known/structpb",
+        "@org_golang_google_protobuf//types/known/timestamppb",
+        "@org_golang_google_protobuf//types/known/wrapperspb",
     ],
 )

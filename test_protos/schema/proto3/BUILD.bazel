@@ -26,7 +26,7 @@ proto_library(
 go_proto_library(
     name = "proto3_go_proto",
     testonly = True,
-    importpath = "github.com/pcj/objecthash-proto/test_protos/generated/latest/proto3",
+    importpath = "github.com/stackb/protoreflecthash/test_protos/generated/latest/proto3",
     proto = ":proto3_proto",
     visibility = ["//visibility:public"],
 )

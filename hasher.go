@@ -9,6 +9,8 @@ import (
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
+const valueName = protoreflect.Name("value")
+
 type ProtoHasherOption func(*hasher)
 
 type ProtoHasher interface {
@@ -60,6 +62,10 @@ func (h *hasher) hashMessage(msg protoreflect.Message) ([]byte, error) {
 	}
 
 	md := msg.Descriptor()
+
+	if hash, err, ok := h.hashWellKnownType(md, msg); ok {
+		return hash, err
+	}
 
 	// TOOD(pcj): what is the correct handling of placeholder types?
 	if md.IsPlaceholder() {
@@ -277,6 +283,98 @@ func (h *hasher) hashMap(kd, fd protoreflect.FieldDescriptor, m protoreflect.Map
 	}
 
 	return hash(mapIdentifier, buf.Bytes())
+}
+
+func (h *hasher) hashWellKnownType(md protoreflect.MessageDescriptor, msg protoreflect.Message) (hash []byte, err error, ok bool) {
+	switch md.FullName() {
+	case protoreflect.FullName("google.protobuf.Any"):
+		hash, err = h.hashGoogleProtobufAny(md, msg)
+	case protoreflect.FullName("google.protobuf.Duration"):
+		hash, err = h.hashGoogleProtobufDuration(md, msg)
+	case protoreflect.FullName("google.protobuf.Timestamp"):
+		hash, err = h.hashGoogleProtobufTimestamp(md, msg)
+	case protoreflect.FullName("google.protobuf.DoubleValue"):
+		hash, err = h.hashGoogleProtobufDoubleValue(md, msg)
+	case protoreflect.FullName("google.protobuf.FloatValue"):
+		hash, err = h.hashGoogleProtobufFloatValue(md, msg)
+	case protoreflect.FullName("google.protobuf.Int64Value"):
+		hash, err = h.hashGoogleProtobufInt64Value(md, msg)
+	case protoreflect.FullName("google.protobuf.Uint64Value"):
+		hash, err = h.hashGoogleProtobufUint64Value(md, msg)
+	case protoreflect.FullName("google.protobuf.Int32Value"):
+		hash, err = h.hashGoogleProtobufInt32Value(md, msg)
+	case protoreflect.FullName("google.protobuf.Uint32Value"):
+		hash, err = h.hashGoogleProtobufUint32Value(md, msg)
+	case protoreflect.FullName("google.protobuf.BoolValue"):
+		hash, err = h.hashGoogleProtobufBoolValue(md, msg)
+	case protoreflect.FullName("google.protobuf.StringValue"):
+		hash, err = h.hashGoogleProtobufStringValue(md, msg)
+	default:
+		return nil, nil, false // no special handling needed, use hashMessage
+	}
+	return hash, err, true
+}
+
+func (h *hasher) hashGoogleProtobufAny(md protoreflect.MessageDescriptor, msg protoreflect.Message) ([]byte, error) {
+	// files := protoregistry.GlobalFiles - create option to set files explictly?
+	typeUrl := msg.Get(md.Fields().ByName("type_url")).String()
+	// TODO: lookup at a type server?
+	return nil, fmt.Errorf("unsupported type: " + typeUrl)
+}
+
+func (h *hasher) hashGoogleProtobufDuration(md protoreflect.MessageDescriptor, msg protoreflect.Message) ([]byte, error) {
+	return h.hashFieldsByName(md, msg, "seconds", "nanos")
+}
+
+func (h *hasher) hashGoogleProtobufTimestamp(md protoreflect.MessageDescriptor, msg protoreflect.Message) ([]byte, error) {
+	return h.hashFieldsByName(md, msg, "seconds", "nanos")
+}
+
+func (h *hasher) hashFieldsByName(md protoreflect.MessageDescriptor, msg protoreflect.Message, names ...string) ([]byte, error) {
+	var buf bytes.Buffer
+
+	for _, name := range names {
+		value := msg.Get(md.Fields().ByName(protoreflect.Name(name)))
+		data, err := h.hashValue(protoreflect.Int32Kind, value)
+		if err != nil {
+			return nil, fmt.Errorf("hashing %s: %w", md.FullName(), err)
+		}
+		buf.Write(data)
+	}
+
+	return hash(listIdentifier, buf.Bytes())
+}
+
+func (h *hasher) hashGoogleProtobufDoubleValue(md protoreflect.MessageDescriptor, msg protoreflect.Message) ([]byte, error) {
+	return h.hashFloat(msg.Get(md.Fields().ByName(valueName)).Float())
+}
+
+func (h *hasher) hashGoogleProtobufFloatValue(md protoreflect.MessageDescriptor, msg protoreflect.Message) ([]byte, error) {
+	return h.hashFloat(msg.Get(md.Fields().ByName(valueName)).Float())
+}
+
+func (h *hasher) hashGoogleProtobufInt64Value(md protoreflect.MessageDescriptor, msg protoreflect.Message) ([]byte, error) {
+	return h.hashInt(msg.Get(md.Fields().ByName(valueName)).Int())
+}
+
+func (h *hasher) hashGoogleProtobufUint64Value(md protoreflect.MessageDescriptor, msg protoreflect.Message) ([]byte, error) {
+	return h.hashUint(msg.Get(md.Fields().ByName(valueName)).Uint())
+}
+
+func (h *hasher) hashGoogleProtobufInt32Value(md protoreflect.MessageDescriptor, msg protoreflect.Message) ([]byte, error) {
+	return h.hashInt(msg.Get(md.Fields().ByName(valueName)).Int())
+}
+
+func (h *hasher) hashGoogleProtobufUint32Value(md protoreflect.MessageDescriptor, msg protoreflect.Message) ([]byte, error) {
+	return h.hashUint(msg.Get(md.Fields().ByName(valueName)).Uint())
+}
+
+func (h *hasher) hashGoogleProtobufBoolValue(md protoreflect.MessageDescriptor, msg protoreflect.Message) ([]byte, error) {
+	return h.hashBool(msg.Get(md.Fields().ByName(valueName)).Bool())
+}
+
+func (h *hasher) hashGoogleProtobufStringValue(md protoreflect.MessageDescriptor, msg protoreflect.Message) ([]byte, error) {
+	return h.hashString(msg.Get(md.Fields().ByName(valueName)).String())
 }
 
 type hashMapEntry struct {

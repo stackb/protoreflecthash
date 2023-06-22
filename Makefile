@@ -9,6 +9,6 @@ test_protoset:
 
 # vendor in the generated files for regular go build process
 pb_go:
-	bazel build //test_protos/schema/proto3:proto3_go_proto build //test_protos/schema/proto2:proto2_go_proto
+	bazel build //test_protos/schema/proto3:proto3_go_proto //test_protos/schema/proto2:proto2_go_proto
 	cp -f bazel-bin/test_protos/schema/proto3/proto3_go_proto_/github.com/stackb/protoreflecthash/test_protos/generated/latest/proto3/*.pb.go test_protos/generated/latest/proto3
 	cp -f bazel-bin/test_protos/schema/proto2/proto2_go_proto_/github.com/stackb/protoreflecthash/test_protos/generated/latest/proto2/*.pb.go test_protos/generated/latest/proto2
